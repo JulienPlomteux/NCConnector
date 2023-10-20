@@ -1,0 +1,229 @@
+openapi: 3.0.0
+info:
+  title: Cruise API
+  description: API for retrieving cruise details
+  version: 1.0.0
+paths:
+  /cruise-details:
+    get:
+      summary: Get cruise details
+      tags:
+        - n-c-controller
+      operationId: GetCruiseDetails
+      description: Returns the details of a specific cruise
+      responses:
+        '200':
+          description: Successfully retrieved the cruise details
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CruiseDetails'
+        '400':
+          description: Invalid request parameter
+        '404':
+          description: Cruise not found
+  /cruises:
+    get:
+      summary: Retrieve cruises by Departure Date and Destination Code
+      tags:
+        - n-c-controller
+      operationId: GetCruisesByDestinationAndDeparture
+      parameters:
+        - name: departureDate
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: destinationCode
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CruiseDetails'
+  /destination-codes:
+    get:
+      summary: Get unique destination codes
+      tags:
+        - n-c-controller
+      operationId: GetDestinationCodes
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '400':
+          description: Invalid request parameter
+        '404':
+          description: Cruise not found
+  /cruises/{destinationCode}:
+    get:
+      summary: Get cruises by destination code
+      tags:
+        - n-c-controller
+      operationId: GetCruisesByDestinationCode
+      parameters:
+        - name: destinationCode
+          in: path
+          description: Destination code
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CruiseDetails'
+        '400':
+          description: Invalid request parameter
+        '404':
+          description: Cruise not found
+  /cruise/{code}/prices:
+    get:
+      summary: Retrieve prices for a cruise by code
+      tags:
+        - n-c-controller
+      operationId: GetCruisePricesByCode
+      parameters:
+        - name: code
+          in: path
+          description: Cruise code
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sailings'
+        '400':
+          description: Invalid request parameter
+        '404':
+          description: Cruise not found
+
+components:
+  schemas:
+#    DestinationCodes:
+#      type: object
+#      properties:
+#        code:
+#          type: array
+#          items:
+#            type: string
+    EmbarkationPort:
+      type: object
+      properties:
+        code:
+          type: string
+        coordinates:
+          type: object
+          properties:
+            lat:
+              type: number
+            lon:
+              type: number
+
+    Pricing:
+      type: object
+      properties:
+        code:
+          type: string
+        status:
+          type: string
+        combinedPrice:
+          type: number
+        totalPrice:
+          type: number
+        offerCodes:
+          type: array
+          items:
+            type: string
+        date:
+          type: string
+          format: date
+
+    Sailings:
+      type: object
+      properties:
+        bundleType:
+          type: string
+        packageId:
+          type: number
+        sailId:
+          type: number
+        departureDate:
+          type: string
+        returnDate:
+          type: string
+        studio:
+          type: number
+        inside:
+          type: number
+        oceanView:
+          type: number
+        balcony:
+          type: number
+        miniSuite:
+          type: number
+        suite:
+          type: number
+        haven:
+          type: number
+        pricing:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pricing'
+    CruiseDetails:
+      type: object
+      properties:
+        bundleType:
+          type: string
+        code:
+          type: string
+        destinationCodes:
+          type: array
+          items:
+            type: string
+#          $ref: '#/components/schemas/DestinationCodes'
+
+#        embarkationPort:
+#          $ref: '#/components/schemas/EmbarkationPort'
+        shipCode:
+          type: string
+        duration:
+          type: number
+        guestCount:
+          type: number
+#        portsOfCall:
+#          type: array
+#          items:
+#            type: string
+#        excursionCodes:
+#          type: array
+#          items:
+#            type: string
+        sailings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sailings'

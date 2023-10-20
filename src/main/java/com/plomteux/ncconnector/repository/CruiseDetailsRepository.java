@@ -1,0 +1,30 @@
+package com.plomteux.ncconnector.repository;
+
+import com.plomteux.ncconnector.entity.CruiseDetailsEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface CruiseDetailsRepository extends JpaRepository<CruiseDetailsEntity, Long> {
+    @Query("SELECT DISTINCT d.destinationCode FROM CruiseDetailsEntity c JOIN c.destinationsEntities d")
+    List<String> findUniqueDestinationCodes();
+
+    @Query("SELECT c FROM CruiseDetailsEntity c JOIN c.destinationsEntities d WHERE d.destinationCode = :destinationCode")
+    List<CruiseDetailsEntity> findByDestinationCode(@Param("destinationCode") String destinationCode);
+
+    @Query("SELECT cd FROM CruiseDetailsEntity cd WHERE cd.code = :code")
+    CruiseDetailsEntity findByCode(@Param("code") String code);
+
+    @Query("SELECT cd FROM CruiseDetailsEntity cd " +
+            "JOIN cd.sailingsEntities se " +
+            "JOIN cd.destinationsEntities de " +
+            "WHERE se.departureDate = :departureDate " +
+            "AND de.destinationCode = :destinationCode")
+    List<CruiseDetailsEntity> findByDepartureDateAndDestinationCode(
+            @Param("departureDate") String departureDate,
+            @Param("destinationCode") String destinationCode);
+}
