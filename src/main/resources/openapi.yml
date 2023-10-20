@@ -1,0 +1,363 @@
+openapi: 3.0.0
+info:
+  title: Cruise API
+  description: API for retrieving cruise details
+  version: 1.0.0
+paths:
+  /cruise-details:
+    get:
+      summary: Get Cruise Details
+      tags:
+        - n-c-controller
+      operationId: getCruiseDetails
+      description: Returns the details of a specific cruise
+      responses:
+        '204':
+          description: Successfully retrieved the cruise details
+        '400':
+          description: Bad Request - Invalid request parameter
+        '404':
+          description: Not Found - Cruise not found
+  /cruise:
+    get:
+      summary: Retrieve Cruises by Departure Date and Destination Code
+      tags:
+        - n-c-controller
+      operationId: getSailingsByDestinationAndDeparture
+      parameters:
+        - name: departureDate
+          in: query
+          required: true
+          description: The departure date parameter (e.g., 2023-10-08)
+          schema:
+            type: string
+            format: date
+        - name: destinationCode
+          in: query
+          required: true
+          description: The destination code parameter
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sailings'
+  /best-cruise-price:
+    get:
+      summary: Return the Best Cruise Price for a Sailing ID
+      tags:
+        - n-c-controller
+      operationId: getBestSailingByPriceAndType
+      parameters:
+        - name: sailId
+          in: query
+          required: true
+          description: The sailing ID
+          schema:
+            type: number
+        - name: roomType
+          in: query
+          required: false
+          description: The room type (e.g., INSIDE, OCEAN_VIEW)
+          schema:
+            type: string
+            enum:
+              - INSIDE
+              - OCEAN_VIEW
+              - MINI_SUITE
+              - STUDIO
+              - SUITE
+              - HAVEN
+              - SPA
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sailings'
+  /daily-price-drops:
+    get:
+      summary: Return Daily Price Drops
+      tags:
+        - n-c-controller
+      operationId: getSailingsPriceDrops
+      parameters:
+        - name: fromDate
+          in: query
+          description: The from date parameter (e.g., 2023-10-08, default is yesterday)
+          schema:
+            type: string
+            format: date
+        - name: toDate
+          in: query
+          description: The to date parameter (e.g., 2023-10-08, default is today)
+          schema:
+            type: string
+            format: date
+        - name: percentage
+          in: query
+          schema:
+            type: number
+        - name: roomType
+          in: query
+          required: false
+          description: The room type (e.g., INSIDE, OCEAN_VIEW)
+          schema:
+            type: string
+            enum:
+              - INSIDE
+              - OCEAN_VIEW
+              - MINI_SUITE
+              - STUDIO
+              - SUITE
+              - HAVEN
+              - SPA
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CruiseOverView'
+  /sailings/{sailId}/prices:
+    get:
+      summary: Return Prices of Sailings by Sailing ID
+      tags:
+        - n-c-controller
+      operationId: getSailingsPricesBySailId
+      parameters:
+        - name: sailId
+          in: path
+          required: true
+          description: The sailing ID
+          schema:
+            type: number
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sailings'
+  /destination-codes:
+    get:
+      summary: Get Unique Destination Codes
+      tags:
+        - n-c-controller
+      operationId: getDestinationCodes
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '400':
+          description: Bad Request - Invalid request parameter
+        '404':
+          description: Not Found - Cruise not found
+  /cruises/{destinationCode}:
+    get:
+      summary: Get Cruises by Destination Code
+      tags:
+        - n-c-controller
+      operationId: getCruisesByDestinationCode
+      parameters:
+        - name: destinationCode
+          in: path
+          description: Destination code
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CruiseDetails'
+        '400':
+          description: Bad Request - Invalid request parameter
+        '404':
+          description: Not Found - Cruise not found
+  /cruise/{code}/prices:
+    get:
+      summary: Retrieve Prices for a Cruise by Code
+      tags:
+        - n-c-controller
+      operationId: getCruisePricesByCode
+      parameters:
+        - name: code
+          in: path
+          description: Cruise code
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sailings'
+
+components:
+  schemas:
+    #    DestinationCodes:
+    #      type: object
+    #      properties:
+    #        code:
+    #          type: array
+    #          items:
+    #            type: string
+#    EmbarkationPort:
+#      type: object
+#      properties:
+#        code:
+#          type: string
+#        coordinates:
+#          type: object
+#          properties:
+#            lat:
+#              type: number
+#            lon:
+#              type: number
+
+    Pricing:
+      type: object
+      properties:
+        code:
+          type: string
+        status:
+          type: string
+        combinedPrice:
+          type: number
+        totalPrice:
+          type: number
+        offerCodes:
+          type: array
+          items:
+            type: string
+        date:
+          type: string
+          format: date
+    CruiseOverView:
+      type: object
+      properties:
+        packageId:
+          type: number
+        sailId:
+          type: number
+        departureDate:
+          type: string
+        returnDate:
+          type: string
+        publishedDate:
+          type: string
+          format: date
+        price:
+          type: number
+        destinationCodes:
+          type: array
+          items:
+            type: string
+        embarkationPortCode:
+          type: string
+        shipCode:
+          type: string
+        duration:
+          type: number
+        guestCount:
+          type: number
+    Sailings:
+      type: object
+      properties:
+        bundleType:
+          type: string
+        packageId:
+          type: number
+        sailId:
+          type: number
+        departureDate:
+          type: string
+        returnDate:
+          type: string
+        publishedDate:
+          type: string
+          format: date
+        studio:
+          type: number
+        inside:
+          type: number
+        oceanView:
+          type: number
+        balcony:
+          type: number
+        miniSuite:
+          type: number
+        suite:
+          type: number
+        haven:
+          type: number
+        spa:
+          type: number
+        oldPrice:
+          type: number
+        pricing:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pricing'
+    CruiseDetails:
+      type: object
+      properties:
+        bundleType:
+          type: string
+        code:
+          type: string
+        destinationCodes:
+          type: array
+          items:
+            type: string
+        #          $ref: '#/components/schemas/DestinationCodes'
+        embarkationPortCode:
+          type: string
+        embarkationPort:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Embarkation port code
+        shipCode:
+          type: string
+        duration:
+          type: number
+        guestCount:
+          type: number
+#        portsOfCall:
+#          type: array
+#          items:
+#            type: string
+#        excursionCodes:
+#          type: array
+#          items:
+#            type: string
+        sailings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sailings'
