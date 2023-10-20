@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigInteger;
 import java.util.List;
 
 @Repository
@@ -17,14 +18,6 @@ public interface CruiseDetailsRepository extends JpaRepository<CruiseDetailsEnti
     List<CruiseDetailsEntity> findByDestinationCode(@Param("destinationCode") String destinationCode);
 
     @Query("SELECT cd FROM CruiseDetailsEntity cd WHERE cd.code = :code")
-    CruiseDetailsEntity findByCode(@Param("code") String code);
+    List<CruiseDetailsEntity> findByCode(@Param("code") String code);
 
-    @Query("SELECT cd FROM CruiseDetailsEntity cd " +
-            "JOIN cd.sailingsEntities se " +
-            "JOIN cd.destinationsEntities de " +
-            "WHERE se.departureDate = :departureDate " +
-            "AND de.destinationCode = :destinationCode")
-    List<CruiseDetailsEntity> findByDepartureDateAndDestinationCode(
-            @Param("departureDate") String departureDate,
-            @Param("destinationCode") String destinationCode);
 }

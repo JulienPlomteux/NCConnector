@@ -1,6 +1,7 @@
 package com.plomteux.ncconnector.mapper;
 
 import com.plomteux.ncconnector.entity.CruiseDetailsEntity;
+import com.plomteux.ncconnector.entity.DestinationCodeEntity;
 import com.plomteux.ncconnector.entity.SailingsEntity;
 import com.plomteux.ncconnector.model.CruiseDetails;
 import com.plomteux.ncconnector.model.Sailings;
@@ -17,8 +18,10 @@ public interface CruiseDetailsMapper {
 
     @Mapping(target = "sailingsEntities", source = "sailings")
     CruiseDetailsEntity toCruiseDetailsEntity(CruiseDetails cruiseDetails);
+
     @Mapping(target = "sailings", source = "sailingsEntities")
     CruiseDetails toCruiseDetails(CruiseDetailsEntity cruiseDetailsEntity);
+
     List<SailingsEntity> toSailingsEntities(List<Sailings> sailingsList);
 
     @AfterMapping
@@ -26,22 +29,16 @@ public interface CruiseDetailsMapper {
         cruiseDetailsEntity.setDestinationsEntities(
                 cruiseDetails.getDestinationCodes().stream()
                         .map(DestinationCodeMapper.INSTANCE::toDestinationCodeEntity)
-                        .collect(Collectors.toList()));
-
+                        .toList());
+        cruiseDetailsEntity.setEmbarkationPortCode(cruiseDetails.getEmbarkationPort().getCode());
         cruiseDetailsEntity.getDestinationsEntities().forEach(destinationCodeEntity -> destinationCodeEntity.setCruiseDetailsEntity(cruiseDetailsEntity));
-        cruiseDetailsEntity.getSailingsEntities().forEach(sailingsEntity -> sailingsEntity.setCruiseDetailsEntity(cruiseDetailsEntity)
-//            sailingsEntity.setDepartureDate(fromEpochToString(sailingsEntity.getDepartureDate()));
-//            sailingsEntity.setReturnDate(fromEpochToString(sailingsEntity.getReturnDate()));
-//            sailingsEntity.setCruiseDetailsEntity(cruiseDetailsEntity);
-//            sailingsEntity.getPricingEntities().forEach(pricingEntity -> pricingEntity.setSailingsEntity(sailingsEntity));
-        );
+        cruiseDetailsEntity.getSailingsEntities().forEach(sailingsEntity -> sailingsEntity.setCruiseDetailsEntity(cruiseDetailsEntity));
     }
-
-//    private String fromEpochToString(String dateString){
-//        long timestamp = Long.parseLong(dateString);
-//        Date date = new Date(timestamp);
-//        return new SimpleDateFormat("yyyy-MM-dd").format(date);
-//
-//    }
-
+    @AfterMapping
+    default void addedMapping(CruiseDetailsEntity cruiseDetailsEntity, @MappingTarget CruiseDetails cruiseDetails) {
+        cruiseDetails.setDestinationCodes(
+                cruiseDetailsEntity.getDestinationsEntities().stream()
+                    .map(DestinationCodeEntity::getDestinationCode)
+                    .toList());
+    }
 }

@@ -6,21 +6,24 @@ import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Objects;
 
 @Component
 @Mapper(componentModel = "spring")
 public interface SailingsMapper {
-//    @Mapping(target = "pricingEntities", source = "pricing")
+    Logger log = LoggerFactory.getLogger(SailingsMapper.class);
     SailingsEntity toSailingsEntity(Sailings sailings);
 
     @Mapping(target = "pricing", ignore = true)
     Sailings toSailings(SailingsEntity sailingsEntity);
-//    List<PricingEntity> toPricingEntity(List<Pricing> pricing);
 
     @AfterMapping
     default void mapTotalPriceToPricingEntities(Sailings sailings, @MappingTarget SailingsEntity sailingsEntity) {
@@ -36,6 +39,8 @@ public interface SailingsMapper {
                         case "MINISUITE" -> sailingsEntity.setMiniSuite(pricingEntity.getTotalPrice());
                         case "SUITE" -> sailingsEntity.setSuite(pricingEntity.getTotalPrice());
                         case "HAVEN" -> sailingsEntity.setHaven(pricingEntity.getTotalPrice());
+                        case "SPA" -> sailingsEntity.setSpa(pricingEntity.getTotalPrice());
+                        default -> log.error("Unknown pricing entity code: {}", pricingEntity.getCode());
                     }
                 });
     }
@@ -46,10 +51,10 @@ public interface SailingsMapper {
         sailingsEntity.setReturnDate(fromEpochToString(sailingsEntity.getReturnDate()));
     }
 
-    private String fromEpochToString(String dateString){
+    private String fromEpochToString(String dateString) {
         long timestamp = Long.parseLong(dateString);
         Date date = new Date(timestamp);
-        return new SimpleDateFormat("yyyy-MM-dd").format(date);
-
+        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        return localDate.format(DateTimeFormatter.ISO_DATE);
     }
 }

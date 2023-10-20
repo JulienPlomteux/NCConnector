@@ -7,6 +7,7 @@ import org.mapstruct.factory.Mappers;
 
 @Mapper(componentModel = "spring")
 public interface DestinationCodeMapper {
-    DestinationCodeMapper INSTANCE = Mappers.getMapper( DestinationCodeMapper.class );
+    DestinationCodeMapper INSTANCE = Mappers.getMapper(DestinationCodeMapper.class);
+
     DestinationCodeEntity toDestinationCodeEntity(String destinationCode);
 }

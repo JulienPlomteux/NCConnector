@@ -1,5 +1,6 @@
 package com.plomteux.ncconnector.entity;
 
+import com.plomteux.ncconnector.model.CruiseDetailsEmbarkationPort;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,6 +20,8 @@ public class CruiseDetailsEntity {
     private String shipCode;
     private BigDecimal duration;
     private BigDecimal guestCount;
+    private String embarkationPortCode;
+
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "cruiseDetailsEntity")
     private List<SailingsEntity> sailingsEntities;
