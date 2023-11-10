@@ -7,6 +7,7 @@ import com.plomteux.ncconnector.model.CruiseDetails;
 import com.plomteux.ncconnector.model.Sailings;
 import com.plomteux.ncconnector.repository.CruiseDetailsRepository;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +24,7 @@ import java.util.*;
 
 @Service
 @AllArgsConstructor
+@Builder
 public class NCService {
     private static final Logger logger = LoggerFactory.getLogger(NCService.class);
 

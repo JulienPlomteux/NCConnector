@@ -19,7 +19,7 @@ public interface SailingsRepository extends JpaRepository<SailingsEntity, Long> 
             "WHERE se.departureDate = :departureDate " +
             "AND de.destinationCode = :destinationCode")
     List<SailingsEntity> findSailingsByDepartureDateAndDestinationCode(
-            @Param("departureDate") LocalDate departureDate,
+            @Param("departureDate") String departureDate,
             @Param("destinationCode") String destinationCode);
 
     @Query("SELECT se FROM SailingsEntity se " +

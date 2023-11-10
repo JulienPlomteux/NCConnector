@@ -1,5 +1,6 @@
 package com.plomteux.ncconnector.controller;
 
+import com.plomteux.ncconnector.configuration.AppConfig;
 import com.plomteux.ncconnector.entity.CruiseDetailsEntity;
 import com.plomteux.ncconnector.entity.SailingsEntity;
 import com.plomteux.ncconnector.mapper.CruiseDetailsMapper;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.matchers.Null;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,16 +48,24 @@ class NCControllerApiImplTest {
     private SailingsMapper sailingsMapper;
     @Mock
     private SailingsRepository sailingsRepository;
-
     @Mock
     private CruiseOverViewMapper cruiseOverViewMapper;
-
+    @Autowired
+    private DateTimeFormatter dateTimeFormatter;
     private NCControllerApiImpl ncController;
 
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
-        ncController = new NCControllerApiImpl(nCService, cruiseDetailsRepository, cruiseDetailsMapper, sailingsRepository, sailingsMapper, cruiseOverViewMapper);
+        ncController = NCControllerApiImpl.builder()
+                .dateTimeFormatter(dateTimeFormatter)
+                .cruiseDetailsMapper(cruiseDetailsMapper)
+                .cruiseDetailsRepository(cruiseDetailsRepository)
+                .cruiseOverViewMapper(cruiseOverViewMapper)
+                .sailingsMapper(sailingsMapper)
+                .sailingsRepository(sailingsRepository)
+                .nCService(nCService)
+                .build();
     }
 
     @Test
@@ -115,7 +125,7 @@ class NCControllerApiImplTest {
         String destinationCode = "DEST1";
         List<SailingsEntity> sailingsEntities = Collections.singletonList(new SailingsEntity());
         List<Sailings> expectedSailings = Collections.singletonList(new Sailings());
-        when(sailingsRepository.findSailingsByDepartureDateAndDestinationCode(departureDate, destinationCode))
+        when(sailingsRepository.findSailingsByDepartureDateAndDestinationCode(departureDate.format(dateTimeFormatter), destinationCode))
                 .thenReturn(sailingsEntities);
         when(sailingsMapper.toSailings(any(SailingsEntity.class)))
                 .thenReturn(expectedSailings.get(0));
@@ -127,7 +137,7 @@ class NCControllerApiImplTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedSailings, response.getBody());
         verify(sailingsRepository, times(1))
-                .findSailingsByDepartureDateAndDestinationCode(departureDate, destinationCode);
+                .findSailingsByDepartureDateAndDestinationCode(departureDate.format(dateTimeFormatter), destinationCode);
         verify(sailingsMapper, times(1)).
                 toSailings(any(SailingsEntity.class));
     }
