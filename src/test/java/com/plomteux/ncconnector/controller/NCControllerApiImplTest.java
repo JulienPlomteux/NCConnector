@@ -1,12 +1,10 @@
 package com.plomteux.ncconnector.controller;
 
-import com.plomteux.ncconnector.configuration.AppConfig;
 import com.plomteux.ncconnector.entity.CruiseDetailsEntity;
 import com.plomteux.ncconnector.entity.SailingsEntity;
 import com.plomteux.ncconnector.mapper.CruiseDetailsMapper;
 import com.plomteux.ncconnector.mapper.CruiseOverViewMapper;
 import com.plomteux.ncconnector.mapper.SailingsMapper;
-import com.plomteux.ncconnector.model.CruiseDetails;
 import com.plomteux.ncconnector.model.CruiseOverView;
 import com.plomteux.ncconnector.model.Sailings;
 import com.plomteux.ncconnector.repository.CruiseDetailsRepository;
@@ -17,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.internal.matchers.Null;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;

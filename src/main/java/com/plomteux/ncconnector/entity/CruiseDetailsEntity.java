@@ -28,4 +28,7 @@ public class CruiseDetailsEntity {
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "cruiseDetailsEntity")
     private List<DestinationCodeEntity> destinationsEntities;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "cruiseDetailsEntity")
+    private List<PortsOfCallEntity> portsOfCallEntities;
 }
