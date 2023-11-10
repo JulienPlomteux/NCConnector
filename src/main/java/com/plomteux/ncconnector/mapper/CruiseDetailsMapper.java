@@ -11,7 +11,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", uses = {SailingsMapper.class, CruiseDetailsMapper.class})
 public interface CruiseDetailsMapper {
@@ -30,8 +29,13 @@ public interface CruiseDetailsMapper {
                 cruiseDetails.getDestinationCodes().stream()
                         .map(DestinationCodeMapper.INSTANCE::toDestinationCodeEntity)
                         .toList());
+        cruiseDetailsEntity.setPortsOfCallEntities(
+                cruiseDetails.getPortsOfCall().stream()
+                        .map(PortsOfCallMapper.INSTANCE::toPortsOfCallEntity)
+                        .toList());
         cruiseDetailsEntity.setEmbarkationPortCode(cruiseDetails.getEmbarkationPort().getCode());
         cruiseDetailsEntity.getDestinationsEntities().forEach(destinationCodeEntity -> destinationCodeEntity.setCruiseDetailsEntity(cruiseDetailsEntity));
+        cruiseDetailsEntity.getPortsOfCallEntities().forEach(portsOfCallEntity -> portsOfCallEntity.setCruiseDetailsEntity(cruiseDetailsEntity));
         cruiseDetailsEntity.getSailingsEntities().forEach(sailingsEntity -> sailingsEntity.setCruiseDetailsEntity(cruiseDetailsEntity));
     }
     @AfterMapping

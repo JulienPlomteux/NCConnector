@@ -2,17 +2,13 @@ package com.plomteux.ncconnector.mapper;
 
 import com.plomteux.ncconnector.entity.CruiseDetailsEntity;
 import com.plomteux.ncconnector.entity.DestinationCodeEntity;
+import com.plomteux.ncconnector.entity.PortsOfCallEntity;
 import com.plomteux.ncconnector.entity.SailingsEntity;
-import com.plomteux.ncconnector.model.CruiseDetails;
 import com.plomteux.ncconnector.model.CruiseOverView;
-import com.plomteux.ncconnector.model.Sailings;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-
-import java.util.List;
-import java.util.Objects;
 
 @Mapper(componentModel = "spring", uses = {SailingsMapper.class, CruiseDetailsMapper.class, CruiseOverViewMapper.class})
 public interface CruiseOverViewMapper {
@@ -28,7 +24,13 @@ public interface CruiseOverViewMapper {
         CruiseDetailsEntity cruiseDetailsEntity = sailingsEntity.getCruiseDetailsEntity();
         cruiseOverView.setDestinationCodes(
                 cruiseDetailsEntity.getDestinationsEntities().stream()
-                .map(DestinationCodeEntity::getDestinationCode)
-                .toList());
+                        .map(DestinationCodeEntity::getDestinationCode)
+                        .toList()
+        );
+        cruiseOverView.setPortsOfCall(
+                cruiseDetailsEntity.getPortsOfCallEntities().stream()
+                        .map(PortsOfCallEntity::getPortsOfCall)
+                        .toList()
+        );
     }
 }
