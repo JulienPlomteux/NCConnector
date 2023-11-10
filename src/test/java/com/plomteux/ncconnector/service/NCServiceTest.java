@@ -52,8 +52,15 @@ class NCServiceTest {
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
-        ncService = new NCService(restTemplate,cruiseDetailsMapper
-                ,cruiseDetailsRepository,NCL_API_ENDPOINT_ITINARIES,FEES_MULTIPLIER,NCL_API_ENDPOINT_PRICES);
+        ncService = NCService.builder()
+                .cruiseDetailsRepository(cruiseDetailsRepository)
+                .FEES_MULTIPLIER(FEES_MULTIPLIER)
+                .NCL_API_ENDPOINT_ITINARIES(NCL_API_ENDPOINT_ITINARIES)
+                .NCL_API_ENDPOINT_PRICES(NCL_API_ENDPOINT_PRICES)
+                .FEES_MULTIPLIER(FEES_MULTIPLIER)
+                .restTemplate(restTemplate)
+                .cruiseDetailsMapper(cruiseDetailsMapper)
+                .build();
     }
     @Test
     void testGetAllCruiseDetails_Success() {

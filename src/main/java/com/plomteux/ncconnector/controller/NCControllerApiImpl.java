@@ -13,6 +13,7 @@ import com.plomteux.ncconnector.repository.SailingsRepository;
 import com.plomteux.ncconnector.service.NCService;
 import jakarta.persistence.Tuple;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,7 @@ import java.util.List;
 
 @AllArgsConstructor
 @RestController
+@Builder
 public class NCControllerApiImpl implements NCControllerApi {
     private static final Logger logger = LoggerFactory.getLogger(NCControllerApiImpl.class);
     private final DateTimeFormatter dateTimeFormatter;
