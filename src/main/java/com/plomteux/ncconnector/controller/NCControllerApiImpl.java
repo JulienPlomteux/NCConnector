@@ -78,12 +78,14 @@ public class NCControllerApiImpl implements NCControllerApi {
 
     @CrossOrigin
     @Override
-    public ResponseEntity<List<Sailings>> getSailingsByDestinationAndDeparture(
+    public ResponseEntity<List<CruiseOverView>> getSailingsByDestinationAndDeparture(
             @RequestParam("departureDate") LocalDate departureDate,
             @RequestParam("destinationCode") String destinationCode) {
         logger.debug("Received getSailingsByDestinationAndDeparture request");
         List<SailingsEntity> sailings = sailingsRepository.findSailingsByDepartureDateAndDestinationCode(departureDate.format(dateTimeFormatter), destinationCode);
-        return ResponseEntity.ok(sailings.stream().map(sailingsMapper::toSailings).toList());
+        return ResponseEntity.ok(sailings.stream()
+                .map(cruiseOverViewMapper::toCruiseOverView)
+                .toList());
     }
 
     @CrossOrigin

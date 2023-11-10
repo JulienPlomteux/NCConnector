@@ -46,7 +46,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Sailings'
+                  $ref: '#/components/schemas/CruiseOverView'
   /best-cruise-price:
     get:
       summary: Return the Best Cruise Price for a Sailing ID
@@ -219,26 +219,6 @@ paths:
 
 components:
   schemas:
-    #    DestinationCodes:
-    #      type: object
-    #      properties:
-    #        code:
-    #          type: array
-    #          items:
-    #            type: string
-#    EmbarkationPort:
-#      type: object
-#      properties:
-#        code:
-#          type: string
-#        coordinates:
-#          type: object
-#          properties:
-#            lat:
-#              type: number
-#            lon:
-#              type: number
-
     Pricing:
       type: object
       properties:
@@ -285,6 +265,25 @@ components:
           type: number
         guestCount:
           type: number
+        portsOfCall:
+          type: array
+          items:
+            type: string
+        studio:
+          type: number
+        inside:
+          type: number
+        oceanView:
+          type: number
+        balcony:
+          type: number
+        miniSuite:
+          type: number
+        suite:
+          type: number
+        haven:
+          type: number
+
     Sailings:
       type: object
       properties:
@@ -353,10 +352,6 @@ components:
           type: array
           items:
             type: string
-#        excursionCodes:
-#          type: array
-#          items:
-#            type: string
         sailings:
           type: array
           items:

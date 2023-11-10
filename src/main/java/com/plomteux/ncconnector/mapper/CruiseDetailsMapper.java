@@ -11,7 +11,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", uses = {SailingsMapper.class, CruiseDetailsMapper.class})
 public interface CruiseDetailsMapper {

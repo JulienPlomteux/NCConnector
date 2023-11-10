@@ -54,15 +54,7 @@ class NCControllerApiImplTest {
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
-        ncController = NCControllerApiImpl.builder()
-                .dateTimeFormatter(dateTimeFormatter)
-                .cruiseDetailsMapper(cruiseDetailsMapper)
-                .cruiseDetailsRepository(cruiseDetailsRepository)
-                .cruiseOverViewMapper(cruiseOverViewMapper)
-                .sailingsMapper(sailingsMapper)
-                .sailingsRepository(sailingsRepository)
-                .nCService(nCService)
-                .build();
+        ncController = NCControllerApiImpl.builder().dateTimeFormatter(dateTimeFormatter).cruiseDetailsMapper(cruiseDetailsMapper).cruiseDetailsRepository(cruiseDetailsRepository).cruiseOverViewMapper(cruiseOverViewMapper).sailingsMapper(sailingsMapper).sailingsRepository(sailingsRepository).nCService(nCService).build();
     }
 
     @Test
@@ -116,27 +108,22 @@ class NCControllerApiImplTest {
     }
 
     @Test
-    void getSailingsByDestinationAndDeparture_shouldReturnListOfSailings() {
+    void getSailingsByDestinationAndDeparture_shouldReturnListOfCruiseOverViewMapper() {
         // Mocking
         LocalDate departureDate = LocalDate.of(2023, 6, 15);
         String destinationCode = "DEST1";
         List<SailingsEntity> sailingsEntities = Collections.singletonList(new SailingsEntity());
-        List<Sailings> expectedSailings = Collections.singletonList(new Sailings());
-        when(sailingsRepository.findSailingsByDepartureDateAndDestinationCode(departureDate.format(dateTimeFormatter), destinationCode))
-                .thenReturn(sailingsEntities);
-        when(sailingsMapper.toSailings(any(SailingsEntity.class)))
-                .thenReturn(expectedSailings.get(0));
+        List<CruiseOverView> expectedCruiseOverView = Collections.singletonList(new CruiseOverView());
+        when(sailingsRepository.findSailingsByDepartureDateAndDestinationCode(departureDate.format(dateTimeFormatter), destinationCode)).thenReturn(sailingsEntities);
+        when(cruiseOverViewMapper.toCruiseOverView(any(SailingsEntity.class))).thenReturn(expectedCruiseOverView.get(0));
         // Execution
-        ResponseEntity<List<Sailings>> response =
-                ncController.getSailingsByDestinationAndDeparture(departureDate, destinationCode);
+        ResponseEntity<List<CruiseOverView>> response = ncController.getSailingsByDestinationAndDeparture(departureDate, destinationCode);
 
         // Verification
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expectedSailings, response.getBody());
-        verify(sailingsRepository, times(1))
-                .findSailingsByDepartureDateAndDestinationCode(departureDate.format(dateTimeFormatter), destinationCode);
-        verify(sailingsMapper, times(1)).
-                toSailings(any(SailingsEntity.class));
+        assertEquals(expectedCruiseOverView, response.getBody());
+        verify(sailingsRepository, times(1)).findSailingsByDepartureDateAndDestinationCode(departureDate.format(dateTimeFormatter), destinationCode);
+        verify(cruiseOverViewMapper, times(1)).toCruiseOverView(any(SailingsEntity.class));
     }
 
     @Test
@@ -146,22 +133,17 @@ class NCControllerApiImplTest {
         String roomType = "inside";
         SailingsEntity sailingsEntity = new SailingsEntity();
         Sailings expectedSailings = new Sailings();
-        when(sailingsRepository.findSailingsWithLowestPriceRoomType(sailId, roomType))
-                .thenReturn(sailingsEntity);
-        when(sailingsMapper.toSailings(any(SailingsEntity.class)))
-                .thenReturn(expectedSailings);
+        when(sailingsRepository.findSailingsWithLowestPriceRoomType(sailId, roomType)).thenReturn(sailingsEntity);
+        when(sailingsMapper.toSailings(any(SailingsEntity.class))).thenReturn(expectedSailings);
 
         // Execution
-        ResponseEntity<Sailings> response =
-                ncController.getBestSailingByPriceAndType(sailId, roomType);
+        ResponseEntity<Sailings> response = ncController.getBestSailingByPriceAndType(sailId, roomType);
 
         // Verification
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expectedSailings, response.getBody());
-        verify(sailingsRepository, times(1))
-                .findSailingsWithLowestPriceRoomType(sailId, roomType);
-        verify(sailingsMapper, times(1)).
-                toSailings(any(SailingsEntity.class));
+        verify(sailingsRepository, times(1)).findSailingsWithLowestPriceRoomType(sailId, roomType);
+        verify(sailingsMapper, times(1)).toSailings(any(SailingsEntity.class));
     }
 
     @Test
@@ -176,12 +158,10 @@ class NCControllerApiImplTest {
         Tuple sailingTuple = mock(Tuple.class);
         sailingsTuples.add(sailingTuple);
 
-        when(sailingsRepository.getSailingsPriceDrops(anyString(), anyString(), eq(percentage), anyString()))
-                .thenReturn(sailingsTuples);
+        when(sailingsRepository.getSailingsPriceDrops(anyString(), anyString(), eq(percentage), anyString())).thenReturn(sailingsTuples);
         when(sailingTuple.get(0, SailingsEntity.class)).thenReturn(new SailingsEntity());
         when(sailingTuple.get(1, BigDecimal.class)).thenReturn(new BigDecimal("100.00"));
-        when(cruiseOverViewMapper.toCruiseOverView(any(SailingsEntity.class)))
-                .thenReturn(new CruiseOverView());
+        when(cruiseOverViewMapper.toCruiseOverView(any(SailingsEntity.class))).thenReturn(new CruiseOverView());
 
         // Execution
         ResponseEntity<List<CruiseOverView>> response = ncController.getSailingsPriceDrops(fromDate, toDate, percentage, roomType);
@@ -189,12 +169,7 @@ class NCControllerApiImplTest {
         // Verification
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(1, Objects.requireNonNull(response.getBody()).size());
-        verify(sailingsRepository, times(1)).getSailingsPriceDrops(
-                fromDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
-                toDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
-                percentage,
-                roomType
-        );
+        verify(sailingsRepository, times(1)).getSailingsPriceDrops(fromDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")), toDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")), percentage, roomType);
         verify(cruiseOverViewMapper, times(1)).toCruiseOverView(any(SailingsEntity.class));
     }
 
@@ -207,10 +182,8 @@ class NCControllerApiImplTest {
         SailingsEntity sailingEntity = new SailingsEntity();
         sailingsEntities.add(sailingEntity);
 
-        when(sailingsRepository.getSailingsPricesBySailId(sailId))
-                .thenReturn(sailingsEntities);
-        when(sailingsMapper.toSailings(any(SailingsEntity.class)))
-                .thenReturn(new Sailings());
+        when(sailingsRepository.getSailingsPricesBySailId(sailId)).thenReturn(sailingsEntities);
+        when(sailingsMapper.toSailings(any(SailingsEntity.class))).thenReturn(new Sailings());
 
         // Execution
         ResponseEntity<List<Sailings>> response = ncController.getSailingsPricesBySailId(sailId);
@@ -221,6 +194,5 @@ class NCControllerApiImplTest {
         verify(sailingsRepository, times(1)).getSailingsPricesBySailId(sailId);
         verify(sailingsMapper, times(1)).toSailings(any(SailingsEntity.class));
     }
-
 }
 
