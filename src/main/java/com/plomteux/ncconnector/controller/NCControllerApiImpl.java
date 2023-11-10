@@ -30,6 +30,7 @@ import java.util.List;
 @RestController
 public class NCControllerApiImpl implements NCControllerApi {
     private static final Logger logger = LoggerFactory.getLogger(NCControllerApiImpl.class);
+    private final DateTimeFormatter dateTimeFormatter;
     private final NCService nCService;
     private final CruiseDetailsRepository cruiseDetailsRepository;
     private final CruiseDetailsMapper cruiseDetailsMapper;
@@ -79,7 +80,7 @@ public class NCControllerApiImpl implements NCControllerApi {
             @RequestParam("departureDate") LocalDate departureDate,
             @RequestParam("destinationCode") String destinationCode) {
         logger.debug("Received getSailingsByDestinationAndDeparture request");
-        List<SailingsEntity> sailings = sailingsRepository.findSailingsByDepartureDateAndDestinationCode(departureDate, destinationCode);
+        List<SailingsEntity> sailings = sailingsRepository.findSailingsByDepartureDateAndDestinationCode(departureDate.format(dateTimeFormatter), destinationCode);
         return ResponseEntity.ok(sailings.stream().map(sailingsMapper::toSailings).toList());
     }
 
@@ -104,10 +105,9 @@ public class NCControllerApiImpl implements NCControllerApi {
         LocalDate fromDateParsed = fromDate != null ? fromDate : LocalDate.now().minusDays(1);
         LocalDate toDateParsed = toDate != null ? toDate : LocalDate.now();
         roomType = roomType != null ? roomType : "inside";
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         List<Tuple> results = sailingsRepository.getSailingsPriceDrops(
-                fromDateParsed.format(formatter),
-                toDateParsed.format(formatter),
+                fromDateParsed.format(dateTimeFormatter),
+                toDateParsed.format(dateTimeFormatter),
                 percentage,
                 roomType
         );
