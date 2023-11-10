@@ -1,6 +1,5 @@
 package com.plomteux.ncconnector.entity;
 
-import com.plomteux.ncconnector.model.CruiseDetailsEmbarkationPort;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
