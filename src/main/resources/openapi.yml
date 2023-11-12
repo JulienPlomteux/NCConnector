@@ -26,7 +26,7 @@ paths:
       operationId: getSailingsByDestinationAndDeparture
       parameters:
         - $ref: '#/components/parameters/departureDate'
-        - $ref: '#/components/parameters/destinationCode'
+        - $ref: '#/components/parameters/destinationCodeRequired'
       responses:
         '200':
           description: OK
@@ -72,6 +72,31 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CruiseOverView'
+  /find-cruise:
+    get:
+      summary: Return cruises
+      tags:
+        - n-c-controller
+      operationId: findCruise
+      parameters:
+        - $ref: '#/components/parameters/departureDate'
+        - $ref: '#/components/parameters/returnDate'
+        - $ref: '#/components/parameters/priceUpTo'
+        - $ref: '#/components/parameters/priceFrom'
+        - $ref: '#/components/parameters/daysAtSeaMin'
+        - $ref: '#/components/parameters/daysAtSeaMax'
+        - $ref: '#/components/parameters/destinationCode'
+        - $ref: '#/components/parameters/departurePort'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CruiseOverView'
+
   /sailings/{sailId}/prices:
     get:
       summary: Return Prices of Sailings by Sailing ID
@@ -159,7 +184,58 @@ components:
         type: string
         format: date
 
-    destinationCode:
+    returnDate:
+      name: returnDate
+      in: query
+      required: true
+      description: The return date parameter (e.g., 2023-10-08)
+      schema:
+        type: string
+        format: date
+
+    daysAtSeaMin:
+      name: daysAtSeaMin
+      in: query
+      description: The minimum days at sea
+      schema:
+        type: number
+
+    daysAtSeaMax:
+      name: daysAtSeaMax
+      in: query
+      description: The maximum days at sea
+      schema:
+        type: number
+
+    duration:
+      name: duration
+      in: query
+      description: The duration of the cruise
+      schema:
+        type: number
+
+    priceUpTo:
+      name: priceUpTo
+      in: query
+      description: The max price of the cruise
+      schema:
+        type: number
+
+    priceFrom:
+      name: priceFrom
+      in: query
+      description: The min price of the cruise
+      schema:
+        type: number
+
+    departurePort:
+      name: departurePort
+      in: query
+      description: The destination code parameter
+      schema:
+        type: string
+
+    destinationCodeRequired:
       name: destinationCode
       in: query
       required: true
@@ -167,6 +243,12 @@ components:
       schema:
         type: string
 
+    destinationCode:
+      name: destinationCode
+      in: query
+      description: The destination code parameter
+      schema:
+        type: string
     sailId:
       name: sailId
       in: query
@@ -204,6 +286,7 @@ components:
       in: query
       schema:
         type: number
+
     toDate:
       name: toDate
       in: query
@@ -331,6 +414,7 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Pricing'
+
     CruiseDetails:
       allOf:
         - $ref: '#/components/schemas/CruiseDetailsShared'

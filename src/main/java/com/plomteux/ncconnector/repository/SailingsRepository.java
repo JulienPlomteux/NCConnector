@@ -7,8 +7,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import javax.xml.crypto.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 
 @Repository
@@ -82,4 +84,28 @@ public interface SailingsRepository extends JpaRepository<SailingsEntity, Long> 
     @Query("SELECT se FROM SailingsEntity se " +
             "WHERE se.sailId = :sailId ")
     List<SailingsEntity> getSailingsPricesBySailId(@Param("sailId") BigDecimal sailId);
+
+
+    @Query("SELECT se FROM SailingsEntity se " +
+            "JOIN se.cruiseDetailsEntity cd " +
+            "JOIN cd.destinationsEntities de " +
+            "WHERE (se.departureDate BETWEEN :departureDate AND :returnDate) " +
+            "AND (:destinationCode IS NULL OR de.destinationCode = :destinationCode) " +
+            "AND (:priceFrom IS NULL OR se.inside >= :priceFrom) " +
+            "AND (:priceUpTo IS NULL OR se.inside <= :priceUpTo) " +
+            "AND (:departurePort IS NULL OR cd.embarkationPortCode = :departurePort) " +
+            "AND (:daysAtSeaMin IS NULL OR cd.duration >= :daysAtSeaMin) " +
+            "AND (:daysAtSeaMax IS NULL OR cd.duration <= :daysAtSeaMax) " +
+            "AND se.publishedDate = CURRENT_DATE " +
+            "ORDER BY se.inside ASC")
+    List<SailingsEntity> findCruise(@Param("departureDate") LocalDate departureDate,
+                                    @Param("returnDate") LocalDate returnDate,
+                                    @Param("destinationCode") String destinationCode,
+                                    @Param("priceUpTo") BigDecimal priceUpTo,
+                                    @Param("priceFrom") BigDecimal priceFrom,
+                                    @Param("daysAtSeaMin") BigDecimal daysAtSeaMin,
+                                    @Param("daysAtSeaMax") BigDecimal daysAtSeaMax,
+                                    @Param("departurePort") String departurePort);
+
+
 }

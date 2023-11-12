@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.time.ZoneId;
+import java.util.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -134,4 +136,23 @@ public class NCControllerApiImpl implements NCControllerApi {
         List<SailingsEntity> sailings = sailingsRepository.getSailingsPricesBySailId(sailId);
         return ResponseEntity.ok(sailings.stream().map(sailingsMapper::toSailings).toList());
     }
+
+    @CrossOrigin
+    @Override
+    public ResponseEntity<List<CruiseOverView>> findCruise(
+            @RequestParam("departureDate") LocalDate departureDate,
+            @RequestParam("returnDate") LocalDate returnDate,
+            @RequestParam("priceUpTo") BigDecimal priceUpTo,
+            @RequestParam("priceFrom") BigDecimal priceFrom,
+            @RequestParam("daysAtSeaMin") BigDecimal daysAtSeaMin,
+            @RequestParam("daysAtSeaMax") BigDecimal daysAtSeaMax,
+            @RequestParam("destinationCode") String destinationCode,
+            @RequestParam("departurePort") String departurePort) {
+        logger.debug("Received findCruise request");
+        List<SailingsEntity> sailings = sailingsRepository.findCruise(departureDate, returnDate, destinationCode, priceUpTo, priceFrom, daysAtSeaMin, daysAtSeaMax, departurePort);
+        return ResponseEntity.ok(sailings.stream()
+                .map(cruiseOverViewMapper::toCruiseOverView)
+                .toList());
+    }
+    
 }

@@ -3,10 +3,12 @@ package com.plomteux.ncconnector.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.cglib.core.Local;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 @Entity
 @Setter
@@ -18,9 +20,9 @@ public class SailingsEntity {
     private BigDecimal sailId;
     private String bundleType;
     private BigDecimal packageId;
-    private String departureDate;
-    private String returnDate;
-    private String publishedDate;
+    private LocalDate departureDate;
+    private LocalDate returnDate;
+    private LocalDate publishedDate;
     private BigDecimal studio;
     private BigDecimal inside;
     private BigDecimal oceanView;
@@ -37,6 +39,6 @@ public class SailingsEntity {
 
     @PrePersist
     public void prePersist() {
-        this.publishedDate = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
+        this.publishedDate = LocalDate.now();
     }
 }
