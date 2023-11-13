@@ -2,17 +2,13 @@ package com.plomteux.ncconnector.mapper;
 
 import com.plomteux.ncconnector.entity.SailingsEntity;
 import com.plomteux.ncconnector.model.Sailings;
-import org.mapstruct.AfterMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import org.mapstruct.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Objects;
 
@@ -20,10 +16,19 @@ import java.util.Objects;
 @Mapper(componentModel = "spring")
 public interface SailingsMapper {
     Logger log = LoggerFactory.getLogger(SailingsMapper.class);
+
+    @Mapping(target = "departureDate", ignore = true)
+    @Mapping(target = "returnDate", ignore = true)
     SailingsEntity toSailingsEntity(Sailings sailings);
 
     @Mapping(target = "pricing", ignore = true)
     Sailings toSailings(SailingsEntity sailingsEntity);
+
+    @BeforeMapping
+    default void setCorrectDateFormatBefore(Sailings sailings, @MappingTarget SailingsEntity sailingsEntity) {
+        sailingsEntity.setDepartureDate(fromEpochToLocalDate(sailings.getDepartureDate()));
+        sailingsEntity.setReturnDate(fromEpochToLocalDate(sailings.getReturnDate()));
+    }
 
     @AfterMapping
     default void mapTotalPriceToPricingEntities(Sailings sailings, @MappingTarget SailingsEntity sailingsEntity) {
@@ -45,16 +50,10 @@ public interface SailingsMapper {
                 });
     }
 
-    @AfterMapping
-    default void setCorrectDateFormat(Sailings sailings, @MappingTarget SailingsEntity sailingsEntity) {
-        sailingsEntity.setDepartureDate(fromEpochToString(sailingsEntity.getDepartureDate()));
-        sailingsEntity.setReturnDate(fromEpochToString(sailingsEntity.getReturnDate()));
-    }
-
-    private String fromEpochToString(String dateString) {
+    private LocalDate fromEpochToLocalDate(String dateString) {
         long timestamp = Long.parseLong(dateString);
         Date date = new Date(timestamp);
-        LocalDate localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        return localDate.format(DateTimeFormatter.ISO_DATE);
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
     }
 }

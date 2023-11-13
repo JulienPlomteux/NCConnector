@@ -8,6 +8,7 @@ import com.plomteux.ncconnector.model.Sailings;
 import com.plomteux.ncconnector.repository.CruiseDetailsRepository;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,9 +25,8 @@ import java.util.*;
 
 @Service
 @AllArgsConstructor
-@Builder
+@Slf4j
 public class NCService {
-    private static final Logger logger = LoggerFactory.getLogger(NCService.class);
 
     private final RestTemplate restTemplate;
     private final CruiseDetailsMapper cruiseDetailsMapper;
@@ -56,14 +56,14 @@ public class NCService {
             );
         } catch (HttpClientErrorException e) {
             HttpStatusCode statusCode = e.getStatusCode();
-            logger.warn("HTTP client error occurred while retrieving cruise details: {} - {}", statusCode, e.getMessage());
+            log.warn("HTTP client error occurred while retrieving cruise details: {} - {}", statusCode, e.getMessage());
             return ResponseEntity.status(statusCode).build();
         } catch (HttpServerErrorException e) {
             HttpStatusCode statusCode = e.getStatusCode();
-            logger.error("HTTP server error occurred while retrieving cruise details: {} - {}", statusCode, e.getMessage(), e);
+            log.error("HTTP server error occurred while retrieving cruise details: {} - {}", statusCode, e.getMessage(), e);
             return ResponseEntity.status(statusCode).build();
         } catch (Exception e) {
-            logger.error("An error occurred while retrieving cruise details: {}", e.getMessage(), e);
+            log.error("An error occurred while retrieving cruise details: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
         List<CruiseDetails> cruiseDetailsList = Objects.requireNonNull(cruiseDetailsResponse.getBody());
@@ -96,13 +96,13 @@ public class NCService {
         } catch (HttpServerErrorException e) {
             String requestBody = cruiseCodes.toString();
             String errorMessage = String.format("HTTP server error occurred: %s - %s. Request body: %s", e.getStatusCode(), e.getMessage(), requestBody);
-            logger.error(errorMessage, e);
+            log.error(errorMessage, e);
         } catch (HttpClientErrorException e) {
-            logger.warn("HTTP client warning");
+            log.warn("HTTP client warning");
         } catch (Exception e) {
             String requestBody = cruiseCodes.toString();
             String errorMessage = String.format("An error occurred while fetching total prices: %s. Request body: %s", e.getMessage(), requestBody);
-            logger.error(errorMessage, e);
+            log.error(errorMessage, e);
         }
         return Collections.emptyMap();
     }
