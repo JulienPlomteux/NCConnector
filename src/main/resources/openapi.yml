@@ -390,30 +390,33 @@ components:
           type: string
           format: date
 
-    CruiseOverView:
+    CruiseOverViewShared:
       allOf:
         - $ref: '#/components/schemas/SailingsShared'
         - $ref: '#/components/schemas/CruiseDetailsShared'
-        - type: object
-          properties:
-            packageId:
-              type: number
-            price:
-              type: number
+
+    CruiseOverView:
+      allOf:
+        - $ref: '#/components/schemas/CruiseOverViewShared'
+      properties:
+        packageId:
+          type: number
+        price:
+          type: number
 
     Sailings:
       allOf:
         - $ref: '#/components/schemas/SailingsShared'
-        - type: object
-          properties:
-            bundleType:
-              type: string
-            oldPrice:
-              type: number
-            pricing:
-              type: array
-              items:
-                $ref: '#/components/schemas/Pricing'
+      properties:
+        bundleType:
+          type: string
+        oldPrice:
+          type: number
+        pricing:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pricing'
+
 
     CruiseDetails:
       allOf:

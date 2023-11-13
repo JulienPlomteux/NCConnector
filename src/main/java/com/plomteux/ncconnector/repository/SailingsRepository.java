@@ -21,7 +21,7 @@ public interface SailingsRepository extends JpaRepository<SailingsEntity, Long> 
             "WHERE se.departureDate = :departureDate " +
             "AND de.destinationCode = :destinationCode")
     List<SailingsEntity> findSailingsByDepartureDateAndDestinationCode(
-            @Param("departureDate") String departureDate,
+            @Param("departureDate") LocalDate departureDate,
             @Param("destinationCode") String destinationCode);
 
     @Query("SELECT se FROM SailingsEntity se " +
@@ -76,8 +76,8 @@ public interface SailingsRepository extends JpaRepository<SailingsEntity, Long> 
             "       ELSE s.inside - s2.inside " +
             "   END DESC")
     List<Tuple> getSailingsPriceDrops(
-            @Param("from") String from,
-            @Param("to") String to,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to,
             @Param("percentage") BigDecimal percentage,
             @Param("roomType") String roomType);
 

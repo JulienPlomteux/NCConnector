@@ -13,8 +13,7 @@ import com.plomteux.ncconnector.service.NCService;
 import jakarta.persistence.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -30,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
@@ -40,23 +40,100 @@ class NCControllerApiImplTest {
     @Mock
     private CruiseDetailsRepository cruiseDetailsRepository;
     @Mock
-    private CruiseDetailsMapper cruiseDetailsMapper;
-    @Mock
     private SailingsMapper sailingsMapper;
     @Mock
     private SailingsRepository sailingsRepository;
     @Mock
     private CruiseOverViewMapper cruiseOverViewMapper;
-    @Autowired
-    private DateTimeFormatter dateTimeFormatter;
+    @InjectMocks
     private NCControllerApiImpl ncController;
+    @Captor
+    ArgumentCaptor<LocalDate> dateCaptor;
 
-    @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
-        ncController = NCControllerApiImpl.builder().dateTimeFormatter(dateTimeFormatter).cruiseDetailsMapper(cruiseDetailsMapper).cruiseDetailsRepository(cruiseDetailsRepository).cruiseOverViewMapper(cruiseOverViewMapper).sailingsMapper(sailingsMapper).sailingsRepository(sailingsRepository).nCService(nCService).build();
+    @Test
+    public void handleException_ReturnsErrorResponse() {
+        // Arrange
+        Exception ex = new Exception("Test exception");
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+        // Act
+        ResponseEntity<Object> response = handler.handleException(ex);
+
+        // Assert
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals("An error occurred: Test exception", response.getBody());
     }
+    @Test
+    void findCruise_shouldThrowException() {
+        // Arrange
+        LocalDate departureDate = LocalDate.now();
+        LocalDate returnDate = LocalDate.now().plusDays(7);
+        BigDecimal priceUpTo = new BigDecimal("1000");
+        BigDecimal priceFrom = new BigDecimal("500");
+        BigDecimal daysAtSeaMin = new BigDecimal("2");
+        BigDecimal daysAtSeaMax = new BigDecimal("5");
+        String destinationCode = "DC";
+        String departurePort = "DP";
 
+        // Mock the findCruise method to throw an exception
+        when(sailingsRepository.findCruise(departureDate, returnDate, destinationCode, priceUpTo, priceFrom, daysAtSeaMin, daysAtSeaMax, departurePort))
+                .thenThrow(new RuntimeException("Test exception"));
+
+        // Act and Assert
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            ncController.findCruise(departureDate, returnDate, priceUpTo, priceFrom, daysAtSeaMin, daysAtSeaMax, destinationCode, departurePort);
+        });
+
+        // Verify that the exception message is correct
+        assertEquals("Test exception", exception.getMessage());
+    }
+    @Test
+    void findCruise_shouldCallRepositoryWithCorrectParameters() {
+        // Arrange
+        LocalDate departureDate = LocalDate.now();
+        LocalDate returnDate = LocalDate.now().plusDays(7);
+        BigDecimal priceUpTo = new BigDecimal("1000");
+        BigDecimal priceFrom = new BigDecimal("500");
+        BigDecimal daysAtSeaMin = new BigDecimal("2");
+        BigDecimal daysAtSeaMax = new BigDecimal("5");
+        String destinationCode = "DC";
+        String departurePort = "DP";
+
+        // Act
+        ncController.findCruise(departureDate, returnDate, priceUpTo, priceFrom, daysAtSeaMin, daysAtSeaMax, destinationCode, departurePort);
+
+        // Assert
+        verify(sailingsRepository).findCruise(dateCaptor.capture(), dateCaptor.capture(), anyString(), any(BigDecimal.class), any(BigDecimal.class), any(BigDecimal.class), any(BigDecimal.class), anyString());
+        List<LocalDate> capturedDates = dateCaptor.getAllValues();
+        assertEquals(departureDate, capturedDates.get(0));
+        assertEquals(returnDate, capturedDates.get(1));
+    }
+    @Test
+    public void findCruise_shouldReturnCruiseOverView() {
+        // Arrange
+        LocalDate departureDate = LocalDate.now();
+        LocalDate returnDate = LocalDate.now().plusDays(7);
+        BigDecimal priceUpTo = new BigDecimal("1000");
+        BigDecimal priceFrom = new BigDecimal("500");
+        BigDecimal daysAtSeaMin = new BigDecimal("2");
+        BigDecimal daysAtSeaMax = new BigDecimal("5");
+        String destinationCode = "DC";
+        String departurePort = "DP";
+
+        SailingsEntity sailingsEntity = new SailingsEntity();
+        when(sailingsRepository.findCruise(departureDate, returnDate, destinationCode, priceUpTo, priceFrom, daysAtSeaMin, daysAtSeaMax, departurePort))
+                .thenReturn(Collections.singletonList(sailingsEntity));
+
+        CruiseOverView cruiseOverView = new CruiseOverView();
+        when(cruiseOverViewMapper.toCruiseOverView(sailingsEntity)).thenReturn(cruiseOverView);
+
+        // Act
+        ResponseEntity<List<CruiseOverView>> response = ncController.findCruise(departureDate, returnDate, priceUpTo, priceFrom, daysAtSeaMin, daysAtSeaMax, destinationCode, departurePort);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(Collections.singletonList(cruiseOverView), response.getBody());
+    }
     @Test
     void getCruiseDetails_shouldReturnNoContent() {
         // Mocking
@@ -108,25 +185,6 @@ class NCControllerApiImplTest {
     }
 
     @Test
-    void getSailingsByDestinationAndDeparture_shouldReturnListOfCruiseOverViewMapper() {
-        // Mocking
-        LocalDate departureDate = LocalDate.of(2023, 6, 15);
-        String destinationCode = "DEST1";
-        List<SailingsEntity> sailingsEntities = Collections.singletonList(new SailingsEntity());
-        List<CruiseOverView> expectedCruiseOverView = Collections.singletonList(new CruiseOverView());
-        when(sailingsRepository.findSailingsByDepartureDateAndDestinationCode(departureDate.format(dateTimeFormatter), destinationCode)).thenReturn(sailingsEntities);
-        when(cruiseOverViewMapper.toCruiseOverView(any(SailingsEntity.class))).thenReturn(expectedCruiseOverView.get(0));
-        // Execution
-        ResponseEntity<List<CruiseOverView>> response = ncController.getSailingsByDestinationAndDeparture(departureDate, destinationCode);
-
-        // Verification
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expectedCruiseOverView, response.getBody());
-        verify(sailingsRepository, times(1)).findSailingsByDepartureDateAndDestinationCode(departureDate.format(dateTimeFormatter), destinationCode);
-        verify(cruiseOverViewMapper, times(1)).toCruiseOverView(any(SailingsEntity.class));
-    }
-
-    @Test
     void getBestSailingByPriceAndType_shouldReturnSailings() {
         // Mocking
         BigDecimal sailId = BigDecimal.valueOf(1100110);
@@ -150,27 +208,51 @@ class NCControllerApiImplTest {
     void getSailingsPriceDrops_shouldReturnCruiseOverView() {
         // Mocking
         BigDecimal percentage = new BigDecimal("0.10");
-        LocalDate fromDate = LocalDate.of(2023, 10, 7);
+        LocalDate fromDate = LocalDate.of(2023, 9, 7);
         LocalDate toDate = LocalDate.of(2023, 10, 8);
         String roomType = "inside";
 
-        List<Tuple> sailingsTuples = new ArrayList<>();
-        Tuple sailingTuple = mock(Tuple.class);
-        sailingsTuples.add(sailingTuple);
+        SailingsEntity sailingsEntity = new SailingsEntity();
+        Tuple tuple = mock(Tuple.class);
+        when(tuple.get(0, SailingsEntity.class)).thenReturn(sailingsEntity);
+        when(tuple.get(1, BigDecimal.class)).thenReturn(BigDecimal.ZERO);
+        List<Tuple> tuples = Collections.singletonList(tuple);
 
-        when(sailingsRepository.getSailingsPriceDrops(anyString(), anyString(), eq(percentage), anyString())).thenReturn(sailingsTuples);
-        when(sailingTuple.get(0, SailingsEntity.class)).thenReturn(new SailingsEntity());
-        when(sailingTuple.get(1, BigDecimal.class)).thenReturn(new BigDecimal("100.00"));
-        when(cruiseOverViewMapper.toCruiseOverView(any(SailingsEntity.class))).thenReturn(new CruiseOverView());
+        when(sailingsRepository.getSailingsPriceDrops(fromDate, toDate, percentage, roomType)).thenReturn(tuples);
+
+        CruiseOverView expectedCruiseOverView = new CruiseOverView();
+        when(cruiseOverViewMapper.toCruiseOverView(any(SailingsEntity.class))).thenReturn(expectedCruiseOverView);
 
         // Execution
         ResponseEntity<List<CruiseOverView>> response = ncController.getSailingsPriceDrops(fromDate, toDate, percentage, roomType);
 
         // Verification
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(1, Objects.requireNonNull(response.getBody()).size());
-        verify(sailingsRepository, times(1)).getSailingsPriceDrops(fromDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")), toDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")), percentage, roomType);
+        assertEquals(Collections.singletonList(expectedCruiseOverView), response.getBody());
+        verify(sailingsRepository, times(1)).getSailingsPriceDrops(fromDate, toDate, percentage, roomType);
         verify(cruiseOverViewMapper, times(1)).toCruiseOverView(any(SailingsEntity.class));
+    }
+
+    @Test
+    void getSailingsByDestinationAndDeparture_shouldReturnListOfCruiseOverViewMapper() {
+        // Mocking
+        LocalDate departureDate = LocalDate.of(2023, 6, 15);
+        String destinationCode = "DEST1";
+
+        List<SailingsEntity> sailingsEntities = Collections.singletonList(new SailingsEntity());
+        when(sailingsRepository.findSailingsByDepartureDateAndDestinationCode(departureDate, destinationCode)).thenReturn(sailingsEntities);
+
+        CruiseOverView expectedCruiseOverView = new CruiseOverView();
+        when(cruiseOverViewMapper.toCruiseOverView(any(SailingsEntity.class))).thenReturn(expectedCruiseOverView);
+
+        // Execution
+        ResponseEntity<List<CruiseOverView>> response = ncController.getSailingsByDestinationAndDeparture(departureDate, destinationCode);
+
+        // Verification
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(Collections.singletonList(expectedCruiseOverView), response.getBody());
+        verify(sailingsRepository).findSailingsByDepartureDateAndDestinationCode(dateCaptor.capture(), anyString());
+        assertEquals(departureDate, dateCaptor.getValue());
     }
 
     @Test
