@@ -11,12 +11,13 @@ import com.plomteux.ncconnector.model.Sailings;
 import com.plomteux.ncconnector.repository.CruiseDetailsRepository;
 import com.plomteux.ncconnector.repository.SailingsRepository;
 import com.plomteux.ncconnector.service.NCService;
-import jakarta.persistence.Tuple;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
@@ -88,6 +89,7 @@ public class NCControllerApiImpl implements NCControllerApi {
             @RequestParam("sailId") BigDecimal sailId,
             @RequestParam("roomType") String roomType) {
         log.debug("Received getBestSailingByPriceAndType request");
+        roomType = roomType != null ? roomType : "inside";
         SailingsEntity sailing = sailingsRepository.findSailingsWithLowestPriceRoomType(sailId, roomType);
         return ResponseEntity.ok(sailingsMapper.toSailings(sailing));
     }
@@ -102,28 +104,26 @@ public class NCControllerApiImpl implements NCControllerApi {
         LocalDate fromDateParsed = fromDate != null ? fromDate : LocalDate.now().minusDays(1);
         LocalDate toDateParsed = toDate != null ? toDate : LocalDate.now();
         roomType = roomType != null ? roomType : "inside";
+        percentage = percentage != null ? percentage : BigDecimal.ZERO;
         if (fromDateParsed.isAfter(toDateParsed)) {
             throw new IllegalArgumentException("From date cannot be after to date");
         }
         if (percentage.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Percentage cannot be negative");
         }
+        if (percentage.compareTo(BigDecimal.ONE) >= 0) {
+            throw new IllegalArgumentException("Percentage cannot be 100% or above");
+        }
 
         log.debug("Received getSailingsPriceDrops request");
 
-        List<Tuple> results = sailingsRepository.getSailingsPriceDrops(
+        List<SailingsEntity> results = sailingsRepository.getSailingsPriceDrops(
                 fromDateParsed,
                 toDateParsed,
                 percentage,
                 roomType
         );
-
         return ResponseEntity.ok(results.stream()
-                .map(result -> {
-                    SailingsEntity s = result.get(0, SailingsEntity.class);
-                    s.setOldPrice(result.get(1, BigDecimal.class));
-                    return s;
-                })
                 .map(cruiseOverViewMapper::toCruiseOverView)
                 .toList());
     }
@@ -152,10 +152,10 @@ public class NCControllerApiImpl implements NCControllerApi {
         if (departureDate.isAfter(returnDate)) {
             throw new IllegalArgumentException("Departure date cannot be after return date");
         }
-        if (priceUpTo.compareTo(priceFrom) < 0) {
+        if (priceUpTo != null && priceFrom != null && priceUpTo.compareTo(priceFrom) < 0) {
             throw new IllegalArgumentException("Price up to cannot be less than price from");
         }
-        if (daysAtSeaMax.compareTo(daysAtSeaMin) < 0) {
+        if (daysAtSeaMax != null && daysAtSeaMin != null && daysAtSeaMax.compareTo(daysAtSeaMin) < 0) {
             throw new IllegalArgumentException("Days at sea max cannot be less than days at sea min");
         }
         List<SailingsEntity> sailings = sailingsRepository.findCruise(departureDate, returnDate, destinationCode, priceUpTo, priceFrom, daysAtSeaMin, daysAtSeaMax, departurePort);

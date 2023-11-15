@@ -61,7 +61,7 @@ class NCControllerApiImplTest {
 
         // Assert
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals("An error occurred: Test exception", response.getBody());
+        assertEquals("An internal server error occurred. Please try again later.", response.getBody());
     }
     @Test
     void findCruise_shouldThrowException() {
@@ -213,12 +213,9 @@ class NCControllerApiImplTest {
         String roomType = "inside";
 
         SailingsEntity sailingsEntity = new SailingsEntity();
-        Tuple tuple = mock(Tuple.class);
-        when(tuple.get(0, SailingsEntity.class)).thenReturn(sailingsEntity);
-        when(tuple.get(1, BigDecimal.class)).thenReturn(BigDecimal.ZERO);
-        List<Tuple> tuples = Collections.singletonList(tuple);
+        List<SailingsEntity> sailingsEntities = Collections.singletonList(sailingsEntity);
 
-        when(sailingsRepository.getSailingsPriceDrops(fromDate, toDate, percentage, roomType)).thenReturn(tuples);
+        when(sailingsRepository.getSailingsPriceDrops(fromDate, toDate, percentage, roomType)).thenReturn(sailingsEntities);
 
         CruiseOverView expectedCruiseOverView = new CruiseOverView();
         when(cruiseOverViewMapper.toCruiseOverView(any(SailingsEntity.class))).thenReturn(expectedCruiseOverView);
