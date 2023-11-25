@@ -35,7 +35,6 @@ public class NCControllerApiImpl implements NCControllerApi {
     private final SailingsMapper sailingsMapper;
     private final CruiseOverViewMapper cruiseOverViewMapper;
 
-    @CrossOrigin
     @Override
     public ResponseEntity<Void> getCruiseDetails() {
         log.debug("Received getCruiseDetails request");
@@ -43,7 +42,6 @@ public class NCControllerApiImpl implements NCControllerApi {
         return ResponseEntity.noContent().build();
     }
 
-    @CrossOrigin
     @Override
     public ResponseEntity<List<String>> getDestinationCodes() {
         log.debug("Received getDestinationCodes request");
@@ -51,7 +49,6 @@ public class NCControllerApiImpl implements NCControllerApi {
         return ResponseEntity.ok(uniqueDestinationCodes);
     }
 
-    @CrossOrigin
     @Override
     public ResponseEntity<List<CruiseDetails>> getCruisesByDestinationCode(@PathVariable String destinationCode) {
         log.debug("Received getCruisesByDestinationCode request");
@@ -59,7 +56,6 @@ public class NCControllerApiImpl implements NCControllerApi {
         return ResponseEntity.ok(cruises.stream().map(cruiseDetailsMapper::toCruiseDetails).toList());
     }
 
-    @CrossOrigin
     @Override
     public ResponseEntity<List<Sailings>> getCruisePricesByCode(@PathVariable String code) {
         log.debug("Received getCruisePricesByCode request");
@@ -71,7 +67,6 @@ public class NCControllerApiImpl implements NCControllerApi {
         return ResponseEntity.ok(sailings.stream().map(sailingsMapper::toSailings).toList());
     }
 
-    @CrossOrigin
     @Override
     public ResponseEntity<List<CruiseOverView>> getSailingsByDestinationAndDeparture(
             @RequestParam("departureDate") LocalDate departureDate,
@@ -83,7 +78,6 @@ public class NCControllerApiImpl implements NCControllerApi {
                 .toList());
     }
 
-    @CrossOrigin
     @Override
     public ResponseEntity<Sailings> getBestSailingByPriceAndType(
             @RequestParam("sailId") BigDecimal sailId,
@@ -94,7 +88,6 @@ public class NCControllerApiImpl implements NCControllerApi {
         return ResponseEntity.ok(sailingsMapper.toSailings(sailing));
     }
 
-    @CrossOrigin
     @Override
     public ResponseEntity<List<CruiseOverView>> getSailingsPriceDrops(
             @RequestParam("fromDate") LocalDate fromDate,
@@ -128,7 +121,6 @@ public class NCControllerApiImpl implements NCControllerApi {
                 .toList());
     }
 
-    @CrossOrigin
     @Override
     public ResponseEntity<List<Sailings>> getSailingsPricesBySailId(
             @RequestParam("sailId") BigDecimal sailId) {
@@ -137,7 +129,6 @@ public class NCControllerApiImpl implements NCControllerApi {
         return ResponseEntity.ok(sailings.stream().map(sailingsMapper::toSailings).toList());
     }
 
-    @CrossOrigin
     @Override
     public ResponseEntity<List<CruiseOverView>> findCruise(
             @RequestParam("departureDate") LocalDate departureDate,
