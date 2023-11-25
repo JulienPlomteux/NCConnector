@@ -88,7 +88,12 @@ public class SailingsRepositoryCustomImpl implements SailingsRepositoryCustom {
 
         Expression<BigDecimal> percentageExpression = cb.literal(percentage);
         Expression<BigDecimal> reducedPrice = cb.prod(s.get(roomTypeField), cb.diff(cb.literal(BigDecimal.ONE), percentageExpression));
-        Predicate priceDropCondition = cb.le(s2.get(roomTypeField), reducedPrice);
+        Predicate priceDropCondition;
+        if (percentage.compareTo(BigDecimal.ZERO) == 0) {
+            priceDropCondition = cb.lt(s2.get(roomTypeField), s.get(roomTypeField));
+        } else {
+            priceDropCondition = cb.le(s2.get(roomTypeField), reducedPrice);
+        }
 
         cq.multiselect(s2, priceDifference)
                 .where(publishedDateConditionS, publishedDateConditionS2, sameSailId, sameBundleType, samePackageId, priceDropCondition)

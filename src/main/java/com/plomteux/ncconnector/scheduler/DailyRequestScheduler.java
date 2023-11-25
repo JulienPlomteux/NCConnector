@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class DailyRequestScheduler {
     private NCControllerApiImpl ncControllerApi;
 
-    @Scheduled(cron = "0 0 0 * * ?")
+    @Scheduled(cron = "0 0 7 * * ?")
     public void triggerDailyCruiseDetailsRequest() {
         ncControllerApi.getCruiseDetails();
     }
