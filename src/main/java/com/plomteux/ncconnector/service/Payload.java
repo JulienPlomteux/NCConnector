@@ -7,8 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Arrays;
-
 @Getter
 @Setter
 @Builder
@@ -22,8 +20,7 @@ public class Payload {
         try {
             return mapper.writeValueAsString(this);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return null;
+            return "ERROR could not write as string";
         }
     }
 

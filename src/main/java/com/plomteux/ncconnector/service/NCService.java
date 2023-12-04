@@ -155,7 +155,9 @@ public class NCService {
                                 default -> throw new IllegalArgumentException("Unsupported room type: " + roomType);
                             }
                         },
-                        () -> { log.warn("Room type " + roomType.getFieldName() + " not found on:" + cruiseDetails.getCode()); }
+                        () -> {
+                            log.warn("Room type " + roomType.getFieldName() + " not found on:" + cruiseDetails.getCode());
+                        }
                 );
     }
 
@@ -164,21 +166,21 @@ public class NCService {
         int retryCount = 0;
         while (true) {
             try {
-                payload = createPayloadObject(cruiseDetails.getCode(),cruiseDetails.getShipCode(),roomType.getFieldName().toUpperCase(),2, sailing.getPackageId().longValue(), Long.parseLong(sailing.getDepartureDate()), Long.parseLong(sailing.getReturnDate()));
-            } catch (Exception e){
+                payload = createPayloadObject(cruiseDetails.getCode(), cruiseDetails.getShipCode(), roomType.getFieldName().toUpperCase(), 2, sailing.getPackageId().longValue(), Long.parseLong(sailing.getDepartureDate()), Long.parseLong(sailing.getReturnDate()));
+            } catch (Exception e) {
                 log.error("An error occurred while creating the payload {}", cruiseDetails.getCode(), e);
                 return null;
             }
             try {
                 HttpEntity<Payload> entity = new HttpEntity<>(payload, jsonHttpHeaders);
-                ResponseEntity<JsonNode> response  = restTemplate.postForEntity(NCL_API_ENDPOINT_PRICES, entity, JsonNode.class);
+                ResponseEntity<JsonNode> response = restTemplate.postForEntity(NCL_API_ENDPOINT_PRICES, entity, JsonNode.class);
                 BigDecimal total = new BigDecimal(response.getBody().get("quotes").get(0).get("total").asText());
                 total = total.add(fees).divide(BigDecimal.valueOf(2));
                 return total;
             } catch (HttpClientErrorException.Forbidden e) {
                 handleForbiddenSleepInstead(NCL_FORBIDDEN_SLEEP_TIME);
             } catch (HttpClientErrorException.BadRequest e) {
-                if (retryCount < 2) {
+                if (retryCount < 3) {
                     retryCount++;
                 } else {
                     handleException(e, cruiseDetails, payload);
@@ -191,6 +193,7 @@ public class NCService {
         }
         return null;
     }
+
     private void handleForbiddenSleepInstead(int secondes) {
         try {
             TimeUnit.SECONDS.sleep(secondes);
@@ -198,6 +201,7 @@ public class NCService {
             Thread.currentThread().interrupt();
         }
     }
+
     private void handleException(Exception e, CruiseDetails cruiseDetails, Payload payload) {
         if (e instanceof HttpServerErrorException) {
             String errorMessage = String.format("HTTP server error occurred: %s - %s. Request body: %s", ((HttpServerErrorException) e).getStatusCode(), e.getMessage(), cruiseDetails.getCode());
@@ -210,6 +214,7 @@ public class NCService {
         }
 
     }
+
     private BigDecimal getFees(CruiseDetails cruiseDetails) {
         BigDecimal duration = cruiseDetails.getDuration();
         return duration.multiply(FEES_MULTIPLIER);
