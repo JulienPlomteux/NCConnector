@@ -23,14 +23,9 @@ public class SailingsEntity {
     private LocalDate departureDate;
     private LocalDate returnDate;
     private LocalDate publishedDate;
-    private BigDecimal studio;
     private BigDecimal inside;
     private BigDecimal oceanView;
     private BigDecimal balcony;
-    private BigDecimal miniSuite;
-    private BigDecimal suite;
-    private BigDecimal haven;
-    private BigDecimal spa;
     private BigDecimal oldPrice;
 
     @ManyToOne(fetch = FetchType.LAZY)

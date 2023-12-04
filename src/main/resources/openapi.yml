@@ -261,17 +261,13 @@ components:
       name: roomType
       in: query
       required: false
-      description: The room type (e.g., INSIDE, OCEAN_VIEW)
+      description: The room type (e.g., INSIDE, OCEANVIEW, BALCONY)
       schema:
         type: string
         enum:
           - INSIDE
-          - OCEAN_VIEW
-          - MINI_SUITE
-          - STUDIO
-          - SUITE
-          - HAVEN
-          - SPA
+          - OCEANVIEW
+          - BALCONY
 
     fromDate:
       name: fromDate
@@ -354,21 +350,11 @@ components:
         publishedDate:
           type: string
           format: date
-        studio:
-          type: number
         inside:
-          type: number
-        oceanView:
           type: number
         balcony:
           type: number
-        miniSuite:
-          type: number
-        suite:
-          type: number
-        haven:
-          type: number
-        spa:
+        oceanView:
           type: number
 
     Pricing:

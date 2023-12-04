@@ -1,6 +1,5 @@
 package com.plomteux.ncconnector.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.plomteux.ncconnector.entity.CruiseDetailsEntity;
 import com.plomteux.ncconnector.mapper.CruiseDetailsMapper;
 import com.plomteux.ncconnector.model.CruiseDetails;
@@ -9,14 +8,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.HttpClientErrorException;
@@ -26,9 +21,8 @@ import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
@@ -36,7 +30,16 @@ import static org.mockito.Mockito.*;
 class NCServiceTest {
     @Value("${ncl.api.endpoint.itinaries}")
     private String NCL_API_ENDPOINT_ITINARIES;
-
+    @Value("${ncl.fees.multiplier}")
+    private BigDecimal FEES_MULTIPLIER;
+    @Value("${ncl.api.endpoint.prices}")
+    private String NCL_API_ENDPOINT_PRICES;
+    @Value("${ncl.thread.sleep.time}")
+    private Long NCL_THREAD_SLEEP_TIME;
+    @Value("${ncl.prevent.sleep.time}")
+    private Integer NCL_PREVENT_SLEEP_TIME;
+    @Value("${ncl.forbidden.sleep.time}")
+    private Integer NCL_FORBIDDEN_SLEEP_TIME;
     @Mock
     private RestTemplate restTemplate;
     @Mock
@@ -48,7 +51,13 @@ class NCServiceTest {
 
     @BeforeEach
     void setup() {
+
         ReflectionTestUtils.setField(ncService, "NCL_API_ENDPOINT_ITINARIES", NCL_API_ENDPOINT_ITINARIES);
+        ReflectionTestUtils.setField(ncService, "FEES_MULTIPLIER", FEES_MULTIPLIER);
+        ReflectionTestUtils.setField(ncService, "NCL_API_ENDPOINT_PRICES", NCL_API_ENDPOINT_PRICES);
+        ReflectionTestUtils.setField(ncService, "NCL_THREAD_SLEEP_TIME", NCL_THREAD_SLEEP_TIME);
+        ReflectionTestUtils.setField(ncService, "NCL_PREVENT_SLEEP_TIME", NCL_PREVENT_SLEEP_TIME);
+        ReflectionTestUtils.setField(ncService, "NCL_FORBIDDEN_SLEEP_TIME", NCL_FORBIDDEN_SLEEP_TIME);
     }
 
     @Test
@@ -114,29 +123,12 @@ class NCServiceTest {
     void testSaveCruiseDetailsListInDataBase() {
         // Mocking
         List<CruiseDetails> cruiseDetailsList = new ArrayList<>();
-        cruiseDetailsList.add(new CruiseDetails()); // add a CruiseDetails object to the list
+        cruiseDetailsList.add(new CruiseDetails());
         CruiseDetailsEntity cruiseDetailsEntity = new CruiseDetailsEntity();
         when(cruiseDetailsMapper.toCruiseDetailsEntity(any())).thenReturn(cruiseDetailsEntity);
         // Execution
         ncService.saveCruiseDetailsListInDataBase(cruiseDetailsList);
         // Verification
         verify(cruiseDetailsRepository, times(1)).saveAllAndFlush(anyList());
-    }
-
-    @Test
-    void testFetchTotalPrices() {
-        // Mocking
-        List<CruiseDetails> cruiseDetailsList = new ArrayList<>();
-        CruiseDetails cruise1 = new CruiseDetails();
-        cruiseDetailsList.add(cruise1);
-        // Execution
-        ResponseEntity<JsonNode> mockResponseEntity = ResponseEntity.ok(null);
-        when(restTemplate.postForEntity(anyString(), anyList(), eq(JsonNode.class))).thenReturn(mockResponseEntity);
-
-        // Execution
-        Map<String, BigDecimal> result = ncService.fetchTotalPrices(cruiseDetailsList);
-
-        // Verification
-        assertNotNull(result);
     }
 }
