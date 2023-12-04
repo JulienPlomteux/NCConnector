@@ -155,9 +155,7 @@ public class NCService {
                                 default -> throw new IllegalArgumentException("Unsupported room type: " + roomType);
                             }
                         },
-                        () -> {
-                            log.warn("Room type " + roomType.getFieldName() + " not found on:" + cruiseDetails.getCode());
-                        }
+                        () -> log.warn("Room type " + roomType.getFieldName() + " not found on:" + cruiseDetails.getCode())
                 );
     }
 

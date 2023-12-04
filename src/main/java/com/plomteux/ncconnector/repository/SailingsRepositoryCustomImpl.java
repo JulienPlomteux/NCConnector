@@ -6,17 +6,12 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.criteria.*;
-import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 @Repository
 public class SailingsRepositoryCustomImpl implements SailingsRepositoryCustom {
@@ -105,7 +100,7 @@ public class SailingsRepositoryCustomImpl implements SailingsRepositoryCustom {
                     sailings.setOldPrice(result.get(1, BigDecimal.class));
                     return sailings;
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override

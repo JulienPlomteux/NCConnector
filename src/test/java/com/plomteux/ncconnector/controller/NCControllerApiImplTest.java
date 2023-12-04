@@ -48,7 +48,7 @@ class NCControllerApiImplTest {
     ArgumentCaptor<LocalDate> dateCaptor;
 
     @Test
-    public void handleException_ReturnsErrorResponse() {
+    void handleException_ReturnsErrorResponse() {
         // Arrange
         Exception ex = new Exception("Test exception");
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
@@ -106,7 +106,7 @@ class NCControllerApiImplTest {
         assertEquals(returnDate, capturedDates.get(1));
     }
     @Test
-    public void findCruise_shouldReturnCruiseOverView() {
+    void findCruise_shouldReturnCruiseOverView() {
         // Arrange
         LocalDate departureDate = LocalDate.now();
         LocalDate returnDate = LocalDate.now().plusDays(7);
