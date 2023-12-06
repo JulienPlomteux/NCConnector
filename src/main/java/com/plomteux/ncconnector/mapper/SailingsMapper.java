@@ -30,22 +30,6 @@ public interface SailingsMapper {
         sailingsEntity.setReturnDate(fromEpochToLocalDate(sailings.getReturnDate()));
     }
 
-//    @AfterMapping
-//    default void mapTotalPriceToPricingEntities(Sailings sailings, @MappingTarget SailingsEntity sailingsEntity) {
-//
-//        sailings.getPricing().stream()
-//                .filter(pricingEntity -> Objects.equals(pricingEntity.getStatus(), "AVAILABLE"))
-//                .filter(pricingEntity -> pricingEntity.getCode() != null)
-//                .forEach(pricingEntity -> {
-//                    switch (pricingEntity.getCode()) {
-//                        case "INSIDE" -> sailingsEntity.setInside(pricingEntity.getTotalPrice());
-//                        case "OCEANVIEW" -> sailingsEntity.setOceanView(pricingEntity.getTotalPrice());
-//                        case "BALCONY" -> sailingsEntity.setBalcony(pricingEntity.getTotalPrice());
-//                        default -> log.error("Unknown pricing entity code: {}", pricingEntity.getCode());
-//                    }
-//                });
-//    }
-
     private LocalDate fromEpochToLocalDate(String dateString) {
         long timestamp = Long.parseLong(dateString);
         Date date = new Date(timestamp);

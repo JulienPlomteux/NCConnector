@@ -201,8 +201,8 @@ public class NCService {
     }
 
     private void handleException(Exception e, CruiseDetails cruiseDetails, Payload payload) {
-        if (e instanceof HttpServerErrorException) {
-            String errorMessage = String.format("HTTP server error occurred: %s - %s. Request body: %s", ((HttpServerErrorException) e).getStatusCode(), e.getMessage(), cruiseDetails.getCode());
+        if (e instanceof HttpServerErrorException httpServerErrorException) {
+            String errorMessage = String.format("HTTP server error occurred: %s - %s. Request body: %s", httpServerErrorException.getStatusCode(), e.getMessage(), cruiseDetails.getCode());
             log.error(errorMessage, e);
         } else if (e instanceof HttpClientErrorException) {
             log.warn(payload.toString(), e);

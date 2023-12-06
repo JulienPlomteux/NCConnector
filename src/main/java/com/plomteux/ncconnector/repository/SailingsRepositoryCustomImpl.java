@@ -19,6 +19,16 @@ public class SailingsRepositoryCustomImpl implements SailingsRepositoryCustom {
     @PersistenceContext
     private EntityManager entityManager;
 
+    private static final String CRUISE_DETAILS_ENTITY = "cruiseDetailsEntity";
+    private static final String SAIL_ID = "sailId";
+    private static final String PUBLISHED_DATE = "publishedDate";
+    private static final String INSIDE = "inside";
+    private static final String BUNDLE_TYPE = "bundleType";
+    private static final String PACKAGE_ID = "packageId";
+    private static final String DEPARTURE_DATE = "departureDate";
+    private static final String RETURN_DATE = "returnDate";
+    private static final String EMBARKATION_PORT_CODE = "embarkationPortCode";
+    private static final String DURATION = "duration";
 
     @Override
     public List<SailingsEntity> findSailingsByDepartureDateAndDestinationCode(LocalDate departureDate, String destinationCode) {
@@ -26,7 +36,7 @@ public class SailingsRepositoryCustomImpl implements SailingsRepositoryCustom {
         CriteriaQuery<SailingsEntity> cq = cb.createQuery(SailingsEntity.class);
 
         Root<SailingsEntity> sailings = cq.from(SailingsEntity.class);
-        cq.where(cb.equal(sailings.get("departureDate"), departureDate), cb.equal(sailings.get("cruiseDetailsEntity").get("destinationsEntities").get("destinationCode"), destinationCode));
+        cq.where(cb.equal(sailings.get(DEPARTURE_DATE), departureDate), cb.equal(sailings.get(CRUISE_DETAILS_ENTITY).get("destinationsEntities").get("destinationCode"), destinationCode));
 
         return entityManager.createQuery(cq).getResultList();
     }
@@ -37,7 +47,7 @@ public class SailingsRepositoryCustomImpl implements SailingsRepositoryCustom {
         CriteriaQuery<SailingsEntity> cq = cb.createQuery(SailingsEntity.class);
 
         Root<SailingsEntity> sailings = cq.from(SailingsEntity.class);
-        cq.where(cb.equal(sailings.get("sailId"), sailId));
+        cq.where(cb.equal(sailings.get(SAIL_ID), sailId));
 
         String roomTypeField;
         try {
@@ -72,14 +82,14 @@ public class SailingsRepositoryCustomImpl implements SailingsRepositoryCustom {
         );
 
 
-        Predicate sameSailId = cb.equal(s.get("sailId"), s2.get("sailId"));
-        Predicate sameBundleType = cb.equal(s.get("bundleType"), s2.get("bundleType"));
-        Predicate samePackageId = cb.equal(s.get("packageId"), s2.get("packageId"));
+        Predicate sameSailId = cb.equal(s.get(SAIL_ID), s2.get(SAIL_ID));
+        Predicate sameBundleType = cb.equal(s.get(BUNDLE_TYPE), s2.get(BUNDLE_TYPE));
+        Predicate samePackageId = cb.equal(s.get(PACKAGE_ID), s2.get(PACKAGE_ID));
 
         Expression<LocalDate> fromExpression = cb.literal(from);
         Expression<LocalDate> toExpression = cb.literal(to);
-        Predicate publishedDateConditionS = cb.equal(s.get("publishedDate").as(LocalDate.class), fromExpression);
-        Predicate publishedDateConditionS2 = cb.equal(s2.get("publishedDate").as(LocalDate.class), toExpression);
+        Predicate publishedDateConditionS = cb.equal(s.get(PUBLISHED_DATE).as(LocalDate.class), fromExpression);
+        Predicate publishedDateConditionS2 = cb.equal(s2.get(PUBLISHED_DATE).as(LocalDate.class), toExpression);
 
         Expression<BigDecimal> percentageExpression = cb.literal(percentage);
         Expression<BigDecimal> reducedPrice = cb.prod(s.get(roomTypeField), cb.diff(cb.literal(BigDecimal.ONE), percentageExpression));
@@ -109,7 +119,7 @@ public class SailingsRepositoryCustomImpl implements SailingsRepositoryCustom {
         CriteriaQuery<SailingsEntity> cq = cb.createQuery(SailingsEntity.class);
 
         Root<SailingsEntity> sailings = cq.from(SailingsEntity.class);
-        cq.where(cb.equal(sailings.get("sailId"), sailId));
+        cq.where(cb.equal(sailings.get(SAIL_ID), sailId));
 
         return entityManager.createQuery(cq).getResultList();
     }
@@ -122,31 +132,31 @@ public class SailingsRepositoryCustomImpl implements SailingsRepositoryCustom {
         Root<SailingsEntity> sailings = cq.from(SailingsEntity.class);
         List<Predicate> predicates = new ArrayList<>();
 
-        predicates.add(cb.greaterThanOrEqualTo(sailings.get("departureDate"), departureDate));
-        predicates.add(cb.lessThanOrEqualTo(sailings.get("returnDate"), returnDate));
-        predicates.add(cb.equal(sailings.get("publishedDate"), LocalDate.now()));
+        predicates.add(cb.greaterThanOrEqualTo(sailings.get(DEPARTURE_DATE), departureDate));
+        predicates.add(cb.lessThanOrEqualTo(sailings.get(RETURN_DATE), returnDate));
+        predicates.add(cb.equal(sailings.get(PUBLISHED_DATE), LocalDate.now()));
 
         if (destinationCode != null) {
-            predicates.add(cb.equal(sailings.get("cruiseDetailsEntity").get("destinationsEntities").get("destinationCode"), destinationCode));
+            predicates.add(cb.equal(sailings.get(CRUISE_DETAILS_ENTITY).get("destinationsEntities").get("destinationCode"), destinationCode));
         }
         if (priceFrom != null) {
-            predicates.add(cb.greaterThanOrEqualTo(sailings.get("inside"), priceFrom));
+            predicates.add(cb.greaterThanOrEqualTo(sailings.get(INSIDE), priceFrom));
         }
         if (priceUpTo != null) {
-            predicates.add(cb.lessThanOrEqualTo(sailings.get("inside"), priceUpTo));
+            predicates.add(cb.lessThanOrEqualTo(sailings.get(INSIDE), priceUpTo));
         }
         if (departurePort != null) {
-            predicates.add(cb.equal(sailings.get("cruiseDetailsEntity").get("embarkationPortCode"), departurePort));
+            predicates.add(cb.equal(sailings.get(CRUISE_DETAILS_ENTITY).get(EMBARKATION_PORT_CODE), departurePort));
         }
         if (daysAtSeaMin != null) {
-            predicates.add(cb.greaterThanOrEqualTo(sailings.get("cruiseDetailsEntity").get("duration"), daysAtSeaMin));
+            predicates.add(cb.greaterThanOrEqualTo(sailings.get(CRUISE_DETAILS_ENTITY).get(DURATION), daysAtSeaMin));
         }
         if (daysAtSeaMax != null) {
-            predicates.add(cb.lessThanOrEqualTo(sailings.get("cruiseDetailsEntity").get("duration"), daysAtSeaMax));
+            predicates.add(cb.lessThanOrEqualTo(sailings.get(CRUISE_DETAILS_ENTITY).get(DURATION), daysAtSeaMax));
         }
 
         cq.where(predicates.toArray(new Predicate[0]));
-        cq.orderBy(cb.asc(sailings.get("inside")));
+        cq.orderBy(cb.asc(sailings.get(INSIDE)));
 
         return entityManager.createQuery(cq).getResultList();
     }
