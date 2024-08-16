@@ -10,27 +10,37 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
+import static com.plomteux.ncconnector.util.ProductLinkBuilder.buildProductViewLink;
+
 @Mapper(componentModel = "spring", uses = {SailingsMapper.class, CruiseDetailsMapper.class, CruiseOverViewMapper.class})
 public interface CruiseOverViewMapper {
 
     @Mapping(target = "duration", source = "sailingsEntity.cruiseDetailsEntity.duration")
-    @Mapping(target = "embarkationPortCode", source = "sailingsEntity.cruiseDetailsEntity.embarkationPortCode")
-    @Mapping(target = "guestCount", source = "sailingsEntity.cruiseDetailsEntity.guestCount")
-    @Mapping(target = "price", source = "sailingsEntity.oldPrice")
+    @Mapping(target = "embarkationPort", source = "sailingsEntity.cruiseDetailsEntity.embarkationPortCode")
+    @Mapping(target = "priceDrop", source = "sailingsEntity.oldPrice")
     CruiseOverView toCruiseOverView(SailingsEntity sailingsEntity);
 
     @AfterMapping
     default void addedMapping(SailingsEntity sailingsEntity, @MappingTarget CruiseOverView cruiseOverView) {
         CruiseDetailsEntity cruiseDetailsEntity = sailingsEntity.getCruiseDetailsEntity();
-        cruiseOverView.setDestinationCodes(
+        cruiseOverView.setEmbarkationPort(PortCodeMapper.getCityName(cruiseDetailsEntity.getEmbarkationPortCode()));
+        cruiseOverView.setDestinations(
                 cruiseDetailsEntity.getDestinationsEntities().stream()
                         .map(DestinationCodeEntity::getDestinationCode)
+                        .map(PortCodeMapper::getCityName)
                         .toList()
         );
         cruiseOverView.setPortsOfCall(
                 cruiseDetailsEntity.getPortsOfCallEntities().stream()
                         .map(PortsOfCallEntity::getPortsOfCall)
+                        .map(PortCodeMapper::getCityName)
                         .toList()
+        );
+        cruiseOverView.setProductViewLink(
+                buildProductViewLink(
+                        sailingsEntity.getCruiseDetailsEntity().getCode(),
+                        sailingsEntity.getSailId(),
+                        sailingsEntity.getDepartureDate())
         );
     }
 }

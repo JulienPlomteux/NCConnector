@@ -7,6 +7,7 @@ import com.plomteux.ncconnector.mapper.CruiseDetailsMapper;
 import com.plomteux.ncconnector.model.CruiseDetails;
 import com.plomteux.ncconnector.model.Sailings;
 import com.plomteux.ncconnector.repository.CruiseDetailsRepository;
+import com.plomteux.ncconnector.util.CustomRejectedExecutionHandler;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -16,14 +17,13 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -36,6 +36,7 @@ public class NCService {
     private final HttpHeaders jsonHttpHeaders;
     private final CruiseDetailsMapper cruiseDetailsMapper;
     private final CruiseDetailsRepository cruiseDetailsRepository;
+    private final ScheduledThreadPoolExecutor executorService;
 
     @Value("${ncl.api.endpoint.itinaries}")
     private String NCL_API_ENDPOINT_ITINARIES;
@@ -105,16 +106,16 @@ public class NCService {
                 .sum();
         AtomicInteger count = new AtomicInteger(0);
 
-        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(2);
-
         for (CruiseDetails cruiseDetails : cruiseDetailsList) {
             BigDecimal fees = getFees(cruiseDetails);
             for (Sailings sailing : cruiseDetails.getSailings()) {
                 for (RoomType roomType : RoomType.values()) {
                     executorService.schedule(() -> {
-                        fetchTotalPrice(cruiseDetails, sailing, roomType, fees);
-                        count.incrementAndGet();
-                        printProgress(count.get(), startTime, size);
+                        executeWithRetry(() -> {
+                            fetchTotalPrice(cruiseDetails, sailing, roomType, fees);
+                            count.incrementAndGet();
+                            printProgress(count.get(), startTime, size);
+                        }, 3);
                     }, NCL_THREAD_SLEEP_TIME, TimeUnit.MILLISECONDS);
                 }
             }
@@ -178,7 +179,22 @@ public class NCService {
             } catch (HttpClientErrorException.Forbidden e) {
                 handleForbiddenSleepInstead(NCL_FORBIDDEN_SLEEP_TIME);
             } catch (HttpClientErrorException.BadRequest e) {
-                if (retryCount < 3) {
+                if (retryCount < 5) {
+                    handleForbiddenSleepInstead(5);
+                    retryCount++;
+                } else {
+                    handleException(e, cruiseDetails, payload);
+                    break;
+                }
+            } catch (ResourceAccessException e) {
+                if (retryCount < 5) {
+                    log.warn("Network error occurred, retrying in 5 seconds...");
+                    try {
+                        TimeUnit.SECONDS.sleep(5);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                     retryCount++;
                 } else {
                     handleException(e, cruiseDetails, payload);
@@ -187,15 +203,20 @@ public class NCService {
             } catch (Exception e) {
                 handleException(e, cruiseDetails, payload);
                 break;
+            } catch (Throwable t) {
+                log.error("An unexpected error occurred while fetching total prices: {}", t.getMessage(), t);
+                break;
             }
         }
         return null;
     }
 
-    private void handleForbiddenSleepInstead(int secondes) {
+    private void handleForbiddenSleepInstead(int seconds) {
         try {
-            TimeUnit.SECONDS.sleep(secondes);
+            log.warn("Forbidden sleep for {} seconds", seconds);
+            TimeUnit.SECONDS.sleep(seconds);
         } catch (InterruptedException ie) {
+            log.warn("Sleep interrupted", ie);
             Thread.currentThread().interrupt();
         }
     }
@@ -217,7 +238,22 @@ public class NCService {
         BigDecimal duration = cruiseDetails.getDuration();
         return duration.multiply(FEES_MULTIPLIER);
     }
-
+    private void executeWithRetry(Runnable task, int maxRetries) {
+        int attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                task.run();
+                return; // Exit if successful
+            } catch (Exception e) {
+                attempt++;
+                log.error("Error in scheduled task, attempt {}/{}", attempt, maxRetries, e);
+                if (attempt >= maxRetries) {
+                    log.error("Max retries reached for task {}", task.toString());
+                    throw e; // Rethrow if max retries reached
+                }
+            }
+        }
+    }
     public Payload createPayloadObject(
             @NonNull String itineraryCode, @NonNull String shipCode, @NonNull String metaId,
             @NonNull Integer numberOfGuests, @NonNull Long sailingId, @NonNull Long departureDate,

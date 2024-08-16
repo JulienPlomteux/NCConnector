@@ -381,14 +381,45 @@ components:
         - $ref: '#/components/schemas/SailingsShared'
         - $ref: '#/components/schemas/CruiseDetailsShared'
 
+#    CruiseOverView:
+#      allOf:
+#        - $ref: '#/components/schemas/CruiseOverViewShared'
+#      properties:
+#        packageId:
+#          type: number
+#        price:
+#          type: number
+#        productViewLink:
+#          type: string
     CruiseOverView:
-      allOf:
-        - $ref: '#/components/schemas/CruiseOverViewShared'
+      type: object
       properties:
-        packageId:
+        priceDrop:
           type: number
-        price:
+        inside:
           type: number
+        balcony:
+          type: number
+        oceanView:
+          type: number
+        duration:
+          type: number
+        departureDate:
+          type: string
+        returnDate:
+          type: string
+        embarkationPort:
+          type: string
+        destinations:
+          type: array
+          items:
+            type: string
+        portsOfCall:
+          type: array
+          items:
+            type: string
+        productViewLink:
+          type: string
 
     Sailings:
       allOf:

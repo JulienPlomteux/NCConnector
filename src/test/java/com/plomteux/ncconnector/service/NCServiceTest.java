@@ -4,12 +4,15 @@ import com.plomteux.ncconnector.entity.CruiseDetailsEntity;
 import com.plomteux.ncconnector.mapper.CruiseDetailsMapper;
 import com.plomteux.ncconnector.model.CruiseDetails;
 import com.plomteux.ncconnector.repository.CruiseDetailsRepository;
+import com.plomteux.ncconnector.util.ProductLinkBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
@@ -21,6 +24,7 @@ import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -40,24 +44,30 @@ class NCServiceTest {
     private Integer NCL_PREVENT_SLEEP_TIME;
     @Value("${ncl.forbidden.sleep.time}")
     private Integer NCL_FORBIDDEN_SLEEP_TIME;
+    @Value("${ncl.base.productlink.url}")
+    private String NCL_BASE_PRODUCTLINK_URL;
     @Mock
     private RestTemplate restTemplate;
     @Mock
     private CruiseDetailsRepository cruiseDetailsRepository;
     @Mock
     private CruiseDetailsMapper cruiseDetailsMapper;
+    @Mock
+    private ProductLinkBuilder productLinkBuilder;
+    @Mock
+    private ScheduledThreadPoolExecutor executorService;
     @InjectMocks
     private NCService ncService;
 
     @BeforeEach
     void setup() {
-
         ReflectionTestUtils.setField(ncService, "NCL_API_ENDPOINT_ITINARIES", NCL_API_ENDPOINT_ITINARIES);
         ReflectionTestUtils.setField(ncService, "FEES_MULTIPLIER", FEES_MULTIPLIER);
         ReflectionTestUtils.setField(ncService, "NCL_API_ENDPOINT_PRICES", NCL_API_ENDPOINT_PRICES);
         ReflectionTestUtils.setField(ncService, "NCL_THREAD_SLEEP_TIME", NCL_THREAD_SLEEP_TIME);
         ReflectionTestUtils.setField(ncService, "NCL_PREVENT_SLEEP_TIME", NCL_PREVENT_SLEEP_TIME);
         ReflectionTestUtils.setField(ncService, "NCL_FORBIDDEN_SLEEP_TIME", NCL_FORBIDDEN_SLEEP_TIME);
+        ReflectionTestUtils.setField(ncService, "executorService", executorService);
     }
 
     @Test
@@ -90,6 +100,7 @@ class NCServiceTest {
                 any(HttpEntity.class),
                 eq(new ParameterizedTypeReference<List<CruiseDetails>>() {})
         )).thenThrow(new HttpClientErrorException(clientErrorStatus, errorMessage));
+
         // Execution
         ResponseEntity<List<CruiseDetails>> result = ncService.getAllCruisesDetails();
 
