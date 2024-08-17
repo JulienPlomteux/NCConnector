@@ -20,6 +20,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -168,7 +169,7 @@ public class NCService {
                 HttpEntity<Payload> entity = new HttpEntity<>(payload, jsonHttpHeaders);
                 ResponseEntity<JsonNode> response = restTemplate.postForEntity(NCL_API_ENDPOINT_PRICES, entity, JsonNode.class);
                 BigDecimal total = new BigDecimal(Objects.requireNonNull(response.getBody()).get("quotes").get(0).get("total").asText());
-                total = total.add(fees).divide(BigDecimal.valueOf(2));
+                total = total.divide(BigDecimal.valueOf(2), RoundingMode.CEILING).add(fees);
                 return total;
             } catch (HttpClientErrorException.Forbidden | ResourceAccessException e) {
                 handleForbiddenSleepInstead(NCL_FORBIDDEN_SLEEP_TIME);
