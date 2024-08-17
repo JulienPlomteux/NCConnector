@@ -83,7 +83,7 @@ public class NCService {
             }
         }
         List<CruiseDetails> cruiseDetailsList = Objects.requireNonNull(cruiseDetailsResponse.getBody());
-        fetchTotalPrices(cruiseDetailsList.subList(0, 10));
+        fetchTotalPrices(cruiseDetailsList);
 
         saveCruiseDetailsListInDataBase(cruiseDetailsList);
         return cruiseDetailsResponse;

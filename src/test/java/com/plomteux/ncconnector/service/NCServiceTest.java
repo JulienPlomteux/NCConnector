@@ -54,8 +54,6 @@ class NCServiceTest {
     private CruiseDetailsMapper cruiseDetailsMapper;
     @Mock
     private ProductLinkBuilder productLinkBuilder;
-    @Mock
-    private ScheduledThreadPoolExecutor executorService;
     @InjectMocks
     private NCService ncService;
 
@@ -67,7 +65,6 @@ class NCServiceTest {
         ReflectionTestUtils.setField(ncService, "NCL_THREAD_SLEEP_TIME", NCL_THREAD_SLEEP_TIME);
         ReflectionTestUtils.setField(ncService, "NCL_PREVENT_SLEEP_TIME", NCL_PREVENT_SLEEP_TIME);
         ReflectionTestUtils.setField(ncService, "NCL_FORBIDDEN_SLEEP_TIME", NCL_FORBIDDEN_SLEEP_TIME);
-        ReflectionTestUtils.setField(ncService, "executorService", executorService);
     }
 
     @Test
