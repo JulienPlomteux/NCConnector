@@ -381,16 +381,6 @@ components:
         - $ref: '#/components/schemas/SailingsShared'
         - $ref: '#/components/schemas/CruiseDetailsShared'
 
-#    CruiseOverView:
-#      allOf:
-#        - $ref: '#/components/schemas/CruiseOverViewShared'
-#      properties:
-#        packageId:
-#          type: number
-#        price:
-#          type: number
-#        productViewLink:
-#          type: string
     CruiseOverView:
       type: object
       properties:

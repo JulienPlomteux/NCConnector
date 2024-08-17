@@ -14,6 +14,7 @@ public class AppConfig {
         headers.setContentType(MediaType.APPLICATION_JSON);
         return headers;
     }
+
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();

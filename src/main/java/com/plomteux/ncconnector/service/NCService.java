@@ -7,7 +7,6 @@ import com.plomteux.ncconnector.mapper.CruiseDetailsMapper;
 import com.plomteux.ncconnector.model.CruiseDetails;
 import com.plomteux.ncconnector.model.Sailings;
 import com.plomteux.ncconnector.repository.CruiseDetailsRepository;
-import com.plomteux.ncconnector.util.CustomRejectedExecutionHandler;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +22,7 @@ import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -36,7 +35,6 @@ public class NCService {
     private final HttpHeaders jsonHttpHeaders;
     private final CruiseDetailsMapper cruiseDetailsMapper;
     private final CruiseDetailsRepository cruiseDetailsRepository;
-    private final ScheduledThreadPoolExecutor executorService;
 
     @Value("${ncl.api.endpoint.itinaries}")
     private String NCL_API_ENDPOINT_ITINARIES;
@@ -85,7 +83,7 @@ public class NCService {
             }
         }
         List<CruiseDetails> cruiseDetailsList = Objects.requireNonNull(cruiseDetailsResponse.getBody());
-        fetchTotalPrices(cruiseDetailsList);
+        fetchTotalPrices(cruiseDetailsList.subList(0, 10));
 
         saveCruiseDetailsListInDataBase(cruiseDetailsList);
         return cruiseDetailsResponse;
@@ -110,26 +108,22 @@ public class NCService {
             BigDecimal fees = getFees(cruiseDetails);
             for (Sailings sailing : cruiseDetails.getSailings()) {
                 for (RoomType roomType : RoomType.values()) {
-                    executorService.schedule(() -> {
+                    try {
                         executeWithRetry(() -> {
                             fetchTotalPrice(cruiseDetails, sailing, roomType, fees);
                             count.incrementAndGet();
                             printProgress(count.get(), startTime, size);
                         }, 3);
-                    }, NCL_THREAD_SLEEP_TIME, TimeUnit.MILLISECONDS);
+                    } catch (Exception e) {
+                        log.error("Error processing cruise details: {}", e.getMessage(), e);
+                    }
                 }
             }
         }
 
-        executorService.shutdown();
-        try {
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
         long endTime = System.nanoTime();
         long duration = endTime - startTime;
-        log.info("Execution time in minutes: " + TimeUnit.NANOSECONDS.toMinutes(duration));
+        log.info("Execution time in minutes: {}", TimeUnit.NANOSECONDS.toMinutes(duration));
     }
 
     private void printProgress(int processed, long startTime, int size) {
@@ -138,7 +132,7 @@ public class NCService {
         long elapsedTime = now - startTime;
         long estimatedRemainingTimeInNano = (elapsedTime / processed) * (size - processed);
         long estimatedRemainingTimeInMinutes = TimeUnit.NANOSECONDS.toMinutes(estimatedRemainingTimeInNano);
-        log.info(String.format("%d/%d, estimated remaining time in minutes: %d", processed, size, estimatedRemainingTimeInMinutes));
+        log.info("{}/{}, estimated remaining time in minutes: {}", processed, size, estimatedRemainingTimeInMinutes);
     }
 
     private void fetchTotalPrice(CruiseDetails cruiseDetails, Sailings sailing, RoomType roomType, BigDecimal fees) {
@@ -156,7 +150,7 @@ public class NCService {
                                 default -> throw new IllegalArgumentException("Unsupported room type: " + roomType);
                             }
                         },
-                        () -> log.warn("Room type " + roomType.getFieldName() + " not found on:" + cruiseDetails.getCode())
+                        () -> log.warn("Room type {} not found on:{}", roomType.getFieldName(), cruiseDetails.getCode())
                 );
     }
 
@@ -173,28 +167,14 @@ public class NCService {
             try {
                 HttpEntity<Payload> entity = new HttpEntity<>(payload, jsonHttpHeaders);
                 ResponseEntity<JsonNode> response = restTemplate.postForEntity(NCL_API_ENDPOINT_PRICES, entity, JsonNode.class);
-                BigDecimal total = new BigDecimal(response.getBody().get("quotes").get(0).get("total").asText());
+                BigDecimal total = new BigDecimal(Objects.requireNonNull(response.getBody()).get("quotes").get(0).get("total").asText());
                 total = total.add(fees).divide(BigDecimal.valueOf(2));
                 return total;
-            } catch (HttpClientErrorException.Forbidden e) {
+            } catch (HttpClientErrorException.Forbidden | ResourceAccessException e) {
                 handleForbiddenSleepInstead(NCL_FORBIDDEN_SLEEP_TIME);
             } catch (HttpClientErrorException.BadRequest e) {
                 if (retryCount < 5) {
                     handleForbiddenSleepInstead(5);
-                    retryCount++;
-                } else {
-                    handleException(e, cruiseDetails, payload);
-                    break;
-                }
-            } catch (ResourceAccessException e) {
-                if (retryCount < 5) {
-                    log.warn("Network error occurred, retrying in 5 seconds...");
-                    try {
-                        TimeUnit.SECONDS.sleep(5);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
                     retryCount++;
                 } else {
                     handleException(e, cruiseDetails, payload);
@@ -238,6 +218,7 @@ public class NCService {
         BigDecimal duration = cruiseDetails.getDuration();
         return duration.multiply(FEES_MULTIPLIER);
     }
+
     private void executeWithRetry(Runnable task, int maxRetries) {
         int attempt = 0;
         while (attempt < maxRetries) {
@@ -254,6 +235,7 @@ public class NCService {
             }
         }
     }
+
     public Payload createPayloadObject(
             @NonNull String itineraryCode, @NonNull String shipCode, @NonNull String metaId,
             @NonNull Integer numberOfGuests, @NonNull Long sailingId, @NonNull Long departureDate,

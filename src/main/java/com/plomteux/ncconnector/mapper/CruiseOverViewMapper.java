@@ -12,9 +12,12 @@ import org.mapstruct.MappingTarget;
 
 import static com.plomteux.ncconnector.util.ProductLinkBuilder.buildProductViewLink;
 
-@Mapper(componentModel = "spring", uses = {SailingsMapper.class, CruiseDetailsMapper.class, CruiseOverViewMapper.class})
+@Mapper(componentModel = "spring", uses = {SailingsMapper.class, CruiseDetailsMapper.class})
 public interface CruiseOverViewMapper {
 
+    @Mapping(target = "destinations", ignore = true)
+    @Mapping(target = "portsOfCall", ignore = true)
+    @Mapping(target = "productViewLink", ignore = true)
     @Mapping(target = "duration", source = "sailingsEntity.cruiseDetailsEntity.duration")
     @Mapping(target = "embarkationPort", source = "sailingsEntity.cruiseDetailsEntity.embarkationPortCode")
     @Mapping(target = "priceDrop", source = "sailingsEntity.oldPrice")

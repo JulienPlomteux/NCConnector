@@ -8,6 +8,7 @@ import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+
 @Component
 public class ProductLinkBuilder {
     @Value("${ncl.base.productlink.url}")
@@ -19,6 +20,7 @@ public class ProductLinkBuilder {
     private void init() {
         baseUrl = NCL_BASE_PRODUCTLINK_URL;
     }
+
     public static String buildProductViewLink(String itineraryCode, BigDecimal voyageId, LocalDate sailDate) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String formattedDate = sailDate.format(formatter);
