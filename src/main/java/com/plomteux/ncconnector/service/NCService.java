@@ -1,32 +1,31 @@
 package com.plomteux.ncconnector.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.plomteux.ncconnector.entity.CruiseDetailsEntity;
 import com.plomteux.ncconnector.mapper.CruiseDetailsMapper;
 import com.plomteux.ncconnector.model.CruiseDetails;
 import com.plomteux.ncconnector.model.Sailings;
 import com.plomteux.ncconnector.repository.CruiseDetailsRepository;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.List;
 
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 public class NCService {
+
+    private static final int MAX_ATTEMPTS = 3;
 
     private final RestTemplate restTemplate;
     private final CruiseDetailsMapper cruiseDetailsMapper;
@@ -35,45 +34,57 @@ public class NCService {
     @Value("${ncl.api.endpoint.itinaries}")
     private String NCL_API_ENDPOINT_ITINARIES;
 
-    @Value("${ncl.fees.multiplier}")
-    private BigDecimal FEES_MULTIPLIER;
-
-    @Value("${ncl.api.endpoint.prices}")
-    private String NCL_API_ENDPOINT_PRICES;
+    @Value("${ncl.api.retry.backoff.millis:5000}")
+    private long retryBackoffMillis;
 
     public ResponseEntity<List<CruiseDetails>> getAllCruisesDetails() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<List<CruiseDetails>> cruiseDetailsResponse;
-        try {
-            cruiseDetailsResponse = restTemplate.exchange(
-                    this.NCL_API_ENDPOINT_ITINARIES,
-                    HttpMethod.GET,
-                    entity,
-                    new ParameterizedTypeReference<>() {
-                    }
-            );
-        } catch (HttpClientErrorException e) {
-            HttpStatusCode statusCode = e.getStatusCode();
-            log.warn("HTTP client error occurred while retrieving cruise details: {} - {}", statusCode, e.getMessage());
-            return ResponseEntity.status(statusCode).build();
-        } catch (HttpServerErrorException e) {
-            HttpStatusCode statusCode = e.getStatusCode();
-            log.error("HTTP server error occurred while retrieving cruise details: {} - {}", statusCode, e.getMessage(), e);
-            return ResponseEntity.status(statusCode).build();
-        } catch (Exception e) {
-            log.error("An error occurred while retrieving cruise details: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        ResponseEntity<List<CruiseDetails>> cruiseDetailsResponse = fetchCruiseDetailsWithRetry();
+        List<CruiseDetails> cruiseDetailsList = cruiseDetailsResponse.getBody();
+        if (cruiseDetailsList == null) {
+            return cruiseDetailsResponse;
         }
-        List<CruiseDetails> cruiseDetailsList = Objects.requireNonNull(cruiseDetailsResponse.getBody());
-        Map<String, BigDecimal> totalPriceMap = fetchTotalPrices(cruiseDetailsList);
-        for (CruiseDetails cruiseDetails : cruiseDetailsList) {
-            BigDecimal totalPrice = totalPriceMap.getOrDefault(cruiseDetails.getCode(), BigDecimal.ZERO);
-            setTotalPrice(cruiseDetails, totalPrice);
-        }
+        applyTotalPrices(cruiseDetailsList);
         saveCruiseDetailsListInDataBase(cruiseDetailsList);
         return cruiseDetailsResponse;
+    }
+
+    private ResponseEntity<List<CruiseDetails>> fetchCruiseDetailsWithRetry() {
+        HttpStatusCode lastStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try {
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                HttpEntity<String> entity = new HttpEntity<>(headers);
+                return restTemplate.exchange(
+                        this.NCL_API_ENDPOINT_ITINARIES,
+                        HttpMethod.GET,
+                        entity,
+                        new ParameterizedTypeReference<>() {
+                        }
+                );
+            } catch (HttpClientErrorException e) {
+                log.warn("HTTP client error occurred while retrieving cruise details: {} - {}", e.getStatusCode(), e.getMessage());
+                return ResponseEntity.status(e.getStatusCode()).build();
+            } catch (HttpServerErrorException e) {
+                lastStatus = e.getStatusCode();
+                log.error("HTTP server error occurred while retrieving cruise details (attempt {}/{}): {} - {}", attempt, MAX_ATTEMPTS, e.getStatusCode(), e.getMessage(), e);
+            } catch (RestClientException e) {
+                log.error("An error occurred while retrieving cruise details (attempt {}/{}): {}", attempt, MAX_ATTEMPTS, e.getMessage(), e);
+            }
+            if (attempt < MAX_ATTEMPTS) {
+                sleepBeforeRetry(attempt);
+            }
+        }
+        return ResponseEntity.status(lastStatus).build();
+    }
+
+    private void sleepBeforeRetry(int attempt) {
+        long millis = retryBackoffMillis * attempt;
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     void saveCruiseDetailsListInDataBase(List<CruiseDetails> cruiseDetailsList) {
@@ -83,50 +94,16 @@ public class NCService {
         cruiseDetailsRepository.saveAllAndFlush(entities);
     }
 
-    protected Map<String, BigDecimal> fetchTotalPrices(List<CruiseDetails> cruiseDetailsList) {
-        List<String> cruiseCodes = cruiseDetailsList.stream()
-                .map(CruiseDetails::getCode)
-                .toList();
-        try {
-            ResponseEntity<JsonNode> response = restTemplate.postForEntity(NCL_API_ENDPOINT_PRICES, cruiseCodes, JsonNode.class);
-            JsonNode pricesNode = Objects.requireNonNull(response.getBody()).get("prices");
-            if (pricesNode != null && pricesNode.isArray()) {
-                return extractTotalPrices(pricesNode);
-            }
-        } catch (HttpServerErrorException e) {
-            String requestBody = cruiseCodes.toString();
-            String errorMessage = String.format("HTTP server error occurred: %s - %s. Request body: %s", e.getStatusCode(), e.getMessage(), requestBody);
-            log.error(errorMessage, e);
-        } catch (HttpClientErrorException e) {
-            log.warn("HTTP client warning");
-        } catch (Exception e) {
-            String requestBody = cruiseCodes.toString();
-            String errorMessage = String.format("An error occurred while fetching total prices: %s. Request body: %s", e.getMessage(), requestBody);
-            log.error(errorMessage, e);
-        }
-        return Collections.emptyMap();
-    }
-    protected Map<String, BigDecimal> extractTotalPrices(JsonNode pricesNode) {
-        Map<String, BigDecimal> totalPriceMap = new HashMap<>();
-        for (JsonNode priceNode : pricesNode) {
-            String cruiseCode = priceNode.get("cruiseCode").asText();
-            BigDecimal totalPrice = priceNode.get("taxesAndFees").get("amount").decimalValue();
-            totalPriceMap.put(cruiseCode, totalPrice);
-        }
-        return totalPriceMap;
-    }
-
-    private void setTotalPrice(CruiseDetails cruiseDetails, BigDecimal totalPrice) {
-        BigDecimal duration = cruiseDetails.getDuration();
-        BigDecimal fees = duration.multiply(FEES_MULTIPLIER);
-        List<Sailings> sailings = cruiseDetails.getSailings();
-        for (Sailings sailing : sailings) {
-            sailing.getPricing().forEach(pricing -> {
-                BigDecimal combinedPrice = pricing.getCombinedPrice();
-                if (combinedPrice != null) {
-                    pricing.setTotalPrice(combinedPrice.add(totalPrice).add(fees));
+    private void applyTotalPrices(List<CruiseDetails> cruiseDetailsList) {
+        for (CruiseDetails cruiseDetails : cruiseDetailsList) {
+            for (Sailings sailing : cruiseDetails.getSailings()) {
+                for (var pricing : sailing.getPricing()) {
+                    BigDecimal combinedPrice = pricing.getCombinedPrice();
+                    if (combinedPrice != null) {
+                        pricing.setTotalPrice(combinedPrice);
+                    }
                 }
-            });
+            }
         }
     }
 }

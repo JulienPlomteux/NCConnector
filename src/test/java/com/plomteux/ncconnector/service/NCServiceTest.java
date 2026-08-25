@@ -1,6 +1,5 @@
 package com.plomteux.ncconnector.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.plomteux.ncconnector.entity.CruiseDetailsEntity;
 import com.plomteux.ncconnector.mapper.CruiseDetailsMapper;
 import com.plomteux.ncconnector.model.CruiseDetails;
@@ -9,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
@@ -23,10 +21,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -86,6 +82,12 @@ class NCServiceTest {
 
         // Verification
         assertEquals(clientErrorStatus, result.getStatusCode());
+        verify(restTemplate, times(1)).exchange(
+                eq(NCL_API_ENDPOINT_ITINARIES),
+                eq(HttpMethod.GET),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class)
+        );
         verify(cruiseDetailsRepository, never()).saveAllAndFlush(anyList());
     }
 
@@ -107,6 +109,12 @@ class NCServiceTest {
 
         // Verification
         assertEquals(serverErrorStatus, result.getStatusCode());
+        verify(restTemplate, times(3)).exchange(
+                eq(NCL_API_ENDPOINT_ITINARIES),
+                eq(HttpMethod.GET),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class)
+        );
         verify(cruiseDetailsRepository, never()).saveAllAndFlush(anyList());
     }
 
@@ -121,22 +129,5 @@ class NCServiceTest {
         ncService.saveCruiseDetailsListInDataBase(cruiseDetailsList);
         // Verification
         verify(cruiseDetailsRepository, times(1)).saveAllAndFlush(anyList());
-    }
-
-    @Test
-    void testFetchTotalPrices() {
-        // Mocking
-        List<CruiseDetails> cruiseDetailsList = new ArrayList<>();
-        CruiseDetails cruise1 = new CruiseDetails();
-        cruiseDetailsList.add(cruise1);
-        // Execution
-        ResponseEntity<JsonNode> mockResponseEntity = ResponseEntity.ok(null);
-        when(restTemplate.postForEntity(anyString(), anyList(), eq(JsonNode.class))).thenReturn(mockResponseEntity);
-
-        // Execution
-        Map<String, BigDecimal> result = ncService.fetchTotalPrices(cruiseDetailsList);
-
-        // Verification
-        assertNotNull(result);
     }
 }
